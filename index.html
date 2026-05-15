@@ -481,6 +481,74 @@
 
     .spinner { color: var(--muted); font-size: 0.9rem; padding: 1.5rem 0; }
 
+    /* ── Medaljepall ── */
+    .pall-tittel {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+
+    .pall-container {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 0.5rem;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .pall-plass {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    .pall-info {
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .pall-medalje { font-size: 1.8rem; line-height: 1; }
+
+    .pall-navn {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-top: 0.35rem;
+      color: var(--text);
+    }
+
+    .pall-grad {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-top: 0.1rem;
+    }
+
+    .pall-fakturert {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.1rem;
+    }
+
+    .pall-sokkel {
+      width: 100%;
+      border-radius: 8px 8px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .pall-plass:nth-child(1) .pall-sokkel { height: 90px; background: linear-gradient(135deg,#b8860b,#ffd700); }
+    .pall-plass:nth-child(2) .pall-sokkel { height: 65px; background: linear-gradient(135deg,#7a8a9a,#c0c0c0); }
+    .pall-plass:nth-child(3) .pall-sokkel { height: 45px; background: linear-gradient(135deg,#7a5c3a,#cd7f32); }
+
     /* ── Kommentarprikk på avdelingskort ── */
     .avd-kort { position: relative; }
     .kommentar-prikk {
@@ -885,6 +953,11 @@
     <div class="avd-kort-grid" id="avd-container">
       <div class="spinner">Laster...</div>
     </div>
+
+    <div id="pall-seksjon" style="margin-top:2rem; display:none">
+      <div class="pall-tittel">Faktureringsgrad — avdelingsrangering</div>
+      <div class="pall-container" id="pall-container"></div>
+    </div>
   </div>
 
   <!-- Klar for fakturering-side -->
@@ -1184,6 +1257,54 @@ async function oppdaterVisning() {
     : alleSjekkpunkter;
 
   renderAvdelingKort(avd, avdFilter, sjekkpunkterFiltrert);
+  renderPall(avdFilter ? avd : alleAvdelinger);
+}
+
+function renderPall(avd) {
+  const pallSeksjon = document.getElementById('pall-seksjon');
+  const pallContainer = document.getElementById('pall-container');
+
+  // Kun avdelinger med budsjett og grad satt
+  const medGrad = avd
+    .filter(r => r.grad != null && r.budsjett != null && Number(r.budsjett) > 0)
+    .map(r => ({ ...r, grad: Number(r.grad) }))
+    .sort((a, b) => b.grad - a.grad);
+
+  if (medGrad.length < 2) {
+    pallSeksjon.style.display = 'none';
+    return;
+  }
+
+  pallSeksjon.style.display = 'block';
+
+  const medaljer = ['🥇','🥈','🥉'];
+  const topp = medGrad.slice(0, 3);
+
+  // Rekkefølge på pallen: 2 - 1 - 3 (sølv venstre, gull midt, bronse høyre)
+  const rekkefølge = topp.length === 1 ? [topp[0]]
+    : topp.length === 2 ? [topp[1], topp[0]]
+    : [topp[1], topp[0], topp[2]];
+
+  // Sett sokkel-høyde basert på faktisk plassering (ikke visningsrekkefølge)
+  const sokkelHøyde = [90, 65, 45];
+
+  pallContainer.innerHTML = rekkefølge.map((r, visPlass) => {
+    const faktiskPlass = topp.indexOf(r);  // 0=gull, 1=sølv, 2=bronse
+    const grad = r.grad;
+    const farge = gradFarge(grad);
+    return `
+      <div class="pall-plass">
+        <div class="pall-info">
+          <div class="pall-medalje">${medaljer[faktiskPlass]}</div>
+          <div class="pall-navn">${r.avdeling}</div>
+          <div class="pall-grad" style="color:${farge}">${grad.toFixed(1)}%</div>
+          <div class="pall-fakturert">${fmt(Number(r.fakturert))}</div>
+        </div>
+        <div class="pall-sokkel" style="height:${sokkelHøyde[faktiskPlass]}px">
+          ${faktiskPlass + 1}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 // ── Budsjettstyring ───────────────────────────────────────────────────────
