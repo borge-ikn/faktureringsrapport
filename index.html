@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Faktureringsrapport – Industrikran</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    :root {
+      --bg:           #f0f2f5;
+      --surface:      #ffffff;
+      --surface2:     #e8eaed;
+      --border:       #d1d5db;
+      --accent:       #2563eb;
+      --accent-light: #2563eb;
+      --green:        #059669;
+      --yellow:       #d97706;
+      --red:          #dc2626;
+      --text:         #111827;
+      --muted:        #6b7280;
+      --radius:       12px;
+      --shadow:       0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Innloggingsskjerm ── */
+    #login-skjerm {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .login-kort {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 3rem 2.5rem;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .login-logo {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.4rem;
+    }
+
+    .login-logo span { color: var(--accent-light); }
+
+    .login-sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    .ms-knapp {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: #2f6cbd;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 0.7rem 1.4rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .ms-knapp:hover { background: #1e4fa8; }
+
+    .ms-knapp svg { flex-shrink: 0; }
+
+    .skillelinje {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.25rem 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .skillelinje::before,
+    .skillelinje::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .ep-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.6rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      margin-bottom: 0.6rem;
+      outline: none;
+      display: block;
+    }
+    .ep-input:focus { border-color: var(--accent-light); }
+
+    .ep-knapp {
+      width: 100%;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      padding: 0.65rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .ep-knapp:hover { background: #1d4ed8; }
+
+    .login-feil {
+      margin-top: 1rem;
+      color: var(--red);
+      font-size: 0.85rem;
+    }
+
+    /* ── Dashboard ── */
+    #dashboard {
+      display: none;
+      padding: 1.5rem 2rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .logo span { color: var(--accent-light); }
+
+    .kontroller {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      outline: none;
+      box-shadow: var(--shadow);
+    }
+
+    select:focus { border-color: var(--accent-light); }
+
+    .meta { color: var(--muted); font-size: 0.82rem; }
+
+    .bruker-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      box-shadow: var(--shadow);
+    }
+
+    .logg-ut {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .logg-ut:hover { color: var(--text); border-color: var(--accent); }
+
+    .varsel {
+      background: #fffbeb;
+      border: 1px solid #fbbf24;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-size: 0.88rem;
+      color: #92400e;
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+
+    /* ── KPI ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 860px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ── Admin-knapp ── */
+    .admin-knapp {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .admin-knapp:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Budsjettstyring-side ── */
+    #budsjett-side { display: none; }
+
+    .budsjett-topplinje {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tilbake-knapp {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .tilbake-knapp:hover { border-color: var(--accent); color: var(--accent); }
+
+    .budsjett-side-tittel {
+      font-size: 1.2rem;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .kopier-knapp {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.88rem;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+    .kopier-knapp:hover { border-color: var(--accent); }
+
+    .budsjett-tabell {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .budsjett-tabell th {
+      background: var(--bg);
+      text-align: left;
+      padding: 0.75rem 1.2rem;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .budsjett-tabell td {
+      padding: 0.7rem 1.2rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.92rem;
+      vertical-align: middle;
+    }
+
+    .budsjett-tabell tr:last-child td { border-bottom: none; }
+
+    .budsjett-input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.45rem 0.7rem;
+      font-size: 0.92rem;
+      color: var(--text);
+      width: 180px;
+      text-align: right;
+      outline: none;
+    }
+    .budsjett-input:focus { border-color: var(--accent); }
+
+    .lagre-rad-knapp {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .lagre-rad-knapp:hover { background: #1d4ed8; }
+    .lagre-rad-knapp:disabled { background: var(--border); cursor: default; }
+
+    .rad-status { font-size: 0.8rem; color: var(--green); min-width: 60px; }
+
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .kpi.c-accent { border-left: 4px solid var(--accent-light); }
+    .kpi.c-green  { border-left: 4px solid var(--green); }
+    .kpi.c-yellow { border-left: 4px solid var(--yellow); }
+    .kpi.c-muted  { border-left: 4px solid #9ca3af; }
+
+    .kpi-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+    }
+
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .kpi-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
+
+    /* ── Avdelingskort grid ── */
+    .avd-kort-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+    @media (max-width: 1400px) { .avd-kort-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 860px)  { .avd-kort-grid { grid-template-columns: 1fr; } }
+
+    .avd-kort {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      box-shadow: var(--shadow);
+    }
+
+    .avd-kort.valgt { border-color: var(--accent-light); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+
+    .avd-kort-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .avd-kort-navn {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .avd-kort-grad {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .avd-kort-tall {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.4rem;
+      padding-bottom: 0.9rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .avd-kort-tall-item { display: flex; flex-direction: column; gap: 0.2rem; }
+
+    .avd-kort-tall-label {
+      font-size: 0.63rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .avd-kort-tall-value { font-size: 0.88rem; font-weight: 600; }
+
+    /* ── Ukebarer i kort ── */
+    .avd-kort-uker { display: flex; flex-direction: column; gap: 0.55rem; }
+
+    .kort-uke-rad {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.82rem;
+    }
+
+    .kort-uke-label {
+      width: 110px;
+      flex-shrink: 0;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .kort-uke-bar {
+      flex: 1;
+      background: var(--surface2);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .kort-uke-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--accent-light);
+      transition: width 0.5s ease;
+    }
+    .kort-uke-fill.groen { background: var(--green); }
+
+    .kort-uke-tall {
+      min-width: 130px;
+      text-align: right;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.8rem;
+    }
+    .kort-uke-tall.har-data { color: var(--text); font-weight: 500; }
+
+    .bar-bg { background: var(--surface2); border-radius: 4px; height: 10px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; background: var(--accent-light); transition: width 0.5s ease; }
+    .bar-fill.groen { background: var(--green); }
+
+    .spinner { color: var(--muted); font-size: 0.9rem; padding: 1.5rem 0; }
+  </style>
+</head>
+<body>
+
+<!-- ── Innloggingsskjerm ── -->
+<div id="login-skjerm">
+  <div class="login-kort">
+    <div class="login-logo">Fakturering<span>rapport</span></div>
+    <div class="login-sub">Logg inn med din bedriftskonto for å fortsette</div>
+    <button class="ms-knapp" id="ms-logg-inn">
+      <svg width="20" height="20" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+        <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+        <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+        <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+      </svg>
+      Logg inn med Microsoft
+    </button>
+
+    <div class="skillelinje"><span>eller</span></div>
+
+    <form id="ep-form">
+      <input class="ep-input" type="email"    id="ep-epost"    placeholder="Epost" autocomplete="email" required>
+      <input class="ep-input" type="password" id="ep-passord"  placeholder="Passord" autocomplete="current-password" required>
+      <button class="ep-knapp" type="submit">Logg inn</button>
+    </form>
+
+    <div class="login-feil" id="login-feil"></div>
+  </div>
+</div>
+
+<!-- ── Dashboard ── -->
+<div id="dashboard">
+  <header>
+    <div class="logo">Fakturering<span>rapport</span></div>
+    <div class="kontroller">
+      <select id="maaned-velger" title="Velg måned"></select>
+      <select id="avd-velger" title="Filtrer avdeling">
+        <option value="">Alle avdelinger</option>
+      </select>
+      <span class="meta" id="oppdatert-tid">–</span>
+      <button class="admin-knapp" id="admin-knapp">⚙ Budsjett</button>
+      <div class="bruker-info">
+        <span id="bruker-navn">–</span>
+        <button class="logg-ut" id="logg-ut-knapp">Logg ut</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="varsel" id="varsel">
+    Ingen budsjettsnapshot funnet for denne måneden — viser ordreverdi som budsjettgrunnlag.
+  </div>
+
+  <!-- Rapport-visning -->
+  <div id="rapport-visning">
+    <div class="kpi-grid">
+      <div class="kpi c-muted">
+        <div class="kpi-label">Restordre snapshot VD5</div>
+        <div class="kpi-value" id="k-snapshot">–</div>
+        <div class="kpi-sub">Referanseverdi ved månedsskifte</div>
+      </div>
+      <div class="kpi c-accent">
+        <div class="kpi-label">Budsjett</div>
+        <div class="kpi-value" id="k-budsjett">–</div>
+        <div class="kpi-sub" id="k-budsjett-sub">Faktureringsmål</div>
+      </div>
+      <div class="kpi c-green">
+        <div class="kpi-label">Fakturert</div>
+        <div class="kpi-value" id="k-fakturert">–</div>
+        <div class="kpi-sub" id="k-fakturert-sub">–</div>
+      </div>
+      <div class="kpi c-yellow">
+        <div class="kpi-label">Faktureringsgrad</div>
+        <div class="kpi-value" id="k-grad">–</div>
+        <div class="kpi-sub">av budsjett</div>
+      </div>
+      <div class="kpi c-muted">
+        <div class="kpi-label">Restordre nå</div>
+        <div class="kpi-value" id="k-restordre">–</div>
+        <div class="kpi-sub">Gjenstår å fakturere</div>
+      </div>
+    </div>
+
+    <div class="avd-kort-grid" id="avd-container">
+      <div class="spinner">Laster...</div>
+    </div>
+  </div>
+
+  <!-- Budsjettstyring (admin) -->
+  <div id="budsjett-side">
+    <div class="budsjett-topplinje">
+      <button class="tilbake-knapp" id="tilbake-knapp">← Tilbake til rapport</button>
+      <span class="budsjett-side-tittel">Budsjettstyring — <span id="budsjett-mnd-label"></span></span>
+      <button class="kopier-knapp" id="kopier-forrige-knapp">↩ Kopier fra forrige måned</button>
+    </div>
+    <table class="budsjett-tabell">
+      <thead>
+        <tr>
+          <th>Avdeling</th>
+          <th style="text-align:right">Budsjett (NOK)</th>
+          <th>Sist endret</th>
+          <th></th>
+          <th style="min-width:60px"></th>
+        </tr>
+      </thead>
+      <tbody id="budsjett-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const ADMIN_EMAILS = ['kno@industrikran.no', 'eli@industrikran.no', 'bkv@industrikran.no'];
+function isAdmin(email) { return ADMIN_EMAILS.includes((email || '').toLowerCase()); }
+
+const SUPABASE_URL      = 'https://eeikodpeeybrzgxcsflh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlaWtvZHBlZXlicnpneGNzZmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMzY3MjcsImV4cCI6MjA5MzYxMjcyN30.nJFkmdOvpHrq2MGaDIyF0GShPBUOnOB9h-cf9-elsTY';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── Auth ──
+document.getElementById('ep-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const feilEl = document.getElementById('login-feil');
+  feilEl.textContent = '';
+  const epost   = document.getElementById('ep-epost').value;
+  const passord = document.getElementById('ep-passord').value;
+  const { error } = await sb.auth.signInWithPassword({ email: epost, password: passord });
+  if (error) feilEl.textContent = 'Feil epost eller passord.';
+});
+
+document.getElementById('ms-logg-inn').addEventListener('click', async () => {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'azure',
+    options: {
+      redirectTo: 'https://faktureringsrapport.netlify.app',
+      scopes: 'email profile'
+    }
+  });
+  if (error) document.getElementById('login-feil').textContent = error.message;
+});
+
+document.getElementById('logg-ut-knapp').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  document.getElementById('dashboard').style.display    = 'none';
+  document.getElementById('login-skjerm').style.display = 'flex';
+});
+
+sb.auth.onAuthStateChange((_event, session) => {
+  if (session) {
+    visning('dashboard');
+    const navn = session.user.user_metadata?.full_name
+              || session.user.user_metadata?.name
+              || session.user.email
+              || '–';
+    document.getElementById('bruker-navn').textContent = navn.split(' ')[0];
+    if (isAdmin(session.user.email)) {
+      document.getElementById('admin-knapp').style.display = 'inline-flex';
+    }
+    initDashboard();
+  } else {
+    visning('login');
+  }
+});
+
+function visning(skjerm) {
+  document.getElementById('login-skjerm').style.display = skjerm === 'login'     ? 'flex' : 'none';
+  document.getElementById('dashboard').style.display    = skjerm === 'dashboard' ? 'block' : 'none';
+}
+
+// ── Hjelpefunksjoner ──
+const NORSK_MND = ['januar','februar','mars','april','mai','juni',
+                   'juli','august','september','oktober','november','desember'];
+
+function maanedLabel(datoStr) {
+  const d = new Date(datoStr + 'T00:00:00');
+  return NORSK_MND[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function fmt(num) {
+  if (num == null || isNaN(num)) return '–';
+  const n = Number(num);
+  if (Math.abs(n) >= 1_000_000)
+    return (n / 1_000_000).toLocaleString('no-NO', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' MNOK';
+  if (Math.abs(n) >= 1_000)
+    return Math.round(n / 1_000).toLocaleString('no-NO') + ' TNOK';
+  return Math.round(n).toLocaleString('no-NO') + ' kr';
+}
+
+function gradFarge(pst) {
+  if (pst >= 80) return 'var(--green)';
+  if (pst >= 50) return 'var(--accent-light)';
+  if (pst >= 25) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+function clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
+
+// ── State ──
+let alleAvdelinger   = [];
+let alleSjekkpunkter = [];
+let valgtMaaned      = null;
+let dashboardInit    = false;
+
+async function initDashboard() {
+  if (dashboardInit) return;
+  dashboardInit = true;
+
+  document.getElementById('oppdatert-tid').textContent =
+    'Oppdatert ' + new Date().toLocaleString('no-NO', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+  const { data } = await sb.rpc('fn_tilgjengelige_maaneder');
+  if (!data || !data.length) return;
+
+  const velger = document.getElementById('maaned-velger');
+  velger.innerHTML = '';
+  const idag = new Date();
+  let standardIdx = 0;
+
+  data.forEach((row, i) => {
+    const opt = document.createElement('option');
+    opt.value       = row.maaned;
+    opt.textContent = maanedLabel(row.maaned);
+    velger.appendChild(opt);
+    const d = new Date(row.maaned + 'T00:00:00');
+    if (d.getFullYear() === idag.getFullYear() && d.getMonth() === idag.getMonth())
+      standardIdx = i;
+  });
+
+  velger.selectedIndex = standardIdx;
+  velger.addEventListener('change', () => lastData(velger.value));
+  document.getElementById('avd-velger').addEventListener('change', oppdaterVisning);
+
+  await lastData(velger.value);
+}
+
+async function lastData(maaned) {
+  valgtMaaned = maaned;
+
+  document.getElementById('avd-container').innerHTML = '<div class="spinner">Laster...</div>';
+
+  const [avdRes, sjekpktRes] = await Promise.all([
+    sb.rpc('fn_dashboard_avdeling',     { p_maaned: maaned }),
+    sb.rpc('fn_dashboard_sjekkpunkter', { p_maaned: maaned })
+  ]);
+
+  alleAvdelinger   = avdRes.data     || [];
+  alleSjekkpunkter = sjekpktRes.data || [];
+
+  const avdVelger = document.getElementById('avd-velger');
+  const gjeldende = avdVelger.value;
+  avdVelger.innerHTML = '<option value="">Alle avdelinger</option>';
+  alleAvdelinger.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value       = r.avdeling;
+    opt.textContent = r.avdeling;
+    avdVelger.appendChild(opt);
+  });
+  if (gjeldende) avdVelger.value = gjeldende;
+
+  oppdaterVisning();
+}
+
+async function oppdaterVisning() {
+  const avdFilter = document.getElementById('avd-velger').value;
+
+  const avd = avdFilter
+    ? alleAvdelinger.filter(r => r.avdeling === avdFilter)
+    : alleAvdelinger;
+
+  const totalSnapshot  = avd.reduce((s, r) => s + Number(r.snapshot_vd5 || 0), 0);
+  const totalBudsjett  = avd.reduce((s, r) => s + (r.budsjett != null ? Number(r.budsjett) : 0), 0);
+  const totalFakturert = avd.reduce((s, r) => s + Number(r.fakturert || 0), 0);
+  const totalRestordre = avd.reduce((s, r) => s + Number(r.restordre || 0), 0);
+  const harBudsjett    = avd.some(r => r.budsjett != null);
+
+  document.getElementById('varsel').style.display = totalSnapshot === 0 ? 'block' : 'none';
+  document.getElementById('k-snapshot').textContent = fmt(totalSnapshot);
+  document.getElementById('k-budsjett').textContent = harBudsjett ? fmt(totalBudsjett) : '–';
+  document.getElementById('k-budsjett-sub').textContent = harBudsjett
+    ? 'Faktureringsmål'
+    : 'Budsjett ikke satt';
+
+  const grad = harBudsjett && totalBudsjett > 0
+    ? (totalFakturert / totalBudsjett * 100) : null;
+  const gradEl = document.getElementById('k-grad');
+  gradEl.textContent = grad != null ? grad.toFixed(1) + '%' : '–';
+  gradEl.style.color = grad != null ? gradFarge(grad) : 'var(--muted)';
+
+  document.getElementById('k-fakturert').textContent     = fmt(totalFakturert);
+  document.getElementById('k-fakturert-sub').textContent = harBudsjett
+    ? 'av ' + fmt(totalBudsjett) + ' budsjett'
+    : 'fakturert denne måneden';
+  document.getElementById('k-restordre').textContent = fmt(totalRestordre);
+
+  const sjekkpunkterFiltrert = avdFilter
+    ? alleSjekkpunkter.filter(s => s.avdeling === avdFilter)
+    : alleSjekkpunkter;
+
+  renderAvdelingKort(avd, avdFilter, sjekkpunkterFiltrert);
+}
+
+// ── Budsjettstyring ───────────────────────────────────────────────────────
+document.getElementById('admin-knapp').addEventListener('click', visBudsjettSide);
+document.getElementById('tilbake-knapp').addEventListener('click', () => {
+  document.getElementById('budsjett-side').style.display   = 'none';
+  document.getElementById('rapport-visning').style.display = 'block';
+});
+document.getElementById('kopier-forrige-knapp').addEventListener('click', kopierForrigeMaaned);
+
+function visBudsjettSide() {
+  document.getElementById('rapport-visning').style.display = 'none';
+  document.getElementById('budsjett-side').style.display   = 'block';
+  document.getElementById('budsjett-mnd-label').textContent = maanedLabel(valgtMaaned);
+  renderBudsjettTabell();
+}
+
+function renderBudsjettTabell() {
+  const tbody = document.getElementById('budsjett-tbody');
+  tbody.innerHTML = alleAvdelinger.map(r => {
+    const budsjettVerdi = r.budsjett != null ? Math.round(Number(r.budsjett)) : '';
+    const sistEndret    = r.budsjett != null ? '–' : '';   // updated_at finnes ikke i fn ennå
+    return `
+      <tr>
+        <td style="font-weight:600">${r.avdeling}</td>
+        <td style="text-align:right">
+          <input class="budsjett-input"
+                 type="number"
+                 step="1000"
+                 min="0"
+                 id="bi-${r.avdeling}"
+                 value="${budsjettVerdi}"
+                 placeholder="Ikke satt">
+        </td>
+        <td class="rad-status-tid" id="bt-${r.avdeling}" style="color:var(--muted);font-size:0.82rem">
+          ${sistEndret}
+        </td>
+        <td>
+          <button class="lagre-rad-knapp" onclick="lagreBudsjettRad('${r.avdeling}')">
+            Lagre
+          </button>
+        </td>
+        <td class="rad-status" id="bs-${r.avdeling}"></td>
+      </tr>`;
+  }).join('');
+}
+
+async function lagreBudsjettRad(avdeling) {
+  const input  = document.getElementById('bi-' + avdeling);
+  const status = document.getElementById('bs-' + avdeling);
+  const verdi  = parseFloat(input.value);
+
+  if (isNaN(verdi) || verdi < 0) {
+    status.textContent = '⚠ Ugyldig';
+    status.style.color = 'var(--red)';
+    return;
+  }
+
+  status.textContent = '…';
+  status.style.color = 'var(--muted)';
+
+  const { error } = await sb.rpc('fn_lagre_budsjett', {
+    p_avdeling: avdeling,
+    p_maaned:   valgtMaaned,
+    p_budsjett: verdi
+  });
+
+  if (error) {
+    status.textContent = '✗ Feil';
+    status.style.color = 'var(--red)';
+    console.error(error);
+  } else {
+    status.textContent = '✓ Lagret';
+    status.style.color = 'var(--green)';
+    document.getElementById('bt-' + avdeling).textContent =
+      new Date().toLocaleString('no-NO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    // Oppdater lokal state så KPI-kortene er oppdatert ved retur
+    const rad = alleAvdelinger.find(r => r.avdeling === avdeling);
+    if (rad) rad.budsjett = verdi;
+    setTimeout(() => { status.textContent = ''; }, 3000);
+  }
+}
+
+async function kopierForrigeMaaned() {
+  const d = new Date(valgtMaaned + 'T00:00:00');
+  d.setMonth(d.getMonth() - 1);
+  const forrigeMnd = d.toISOString().slice(0, 7) + '-01';
+
+  const { data, error } = await sb
+    .from('budgets')
+    .select('department_name, budsjett')
+    .eq('month', forrigeMnd);
+
+  if (error || !data || !data.length) {
+    alert('Ingen budsjettdata funnet for forrige måned.');
+    return;
+  }
+
+  data.forEach(b => {
+    const inp = document.getElementById('bi-' + b.department_name);
+    if (inp) inp.value = Math.round(b.budsjett);
+  });
+}
+
+function fmtDato(datoStr) {
+  // "2026-05-11" → "11. mai"
+  const d = new Date(datoStr + 'T00:00:00');
+  return d.getDate() + '. ' + NORSK_MND[d.getMonth()];
+}
+
+function renderAvdelingKort(avd, avdFilter, sjekkpunkter) {
+  const container = document.getElementById('avd-container');
+  if (!avd.length) {
+    container.innerHTML = '<div class="spinner">Ingen ordrer funnet for denne måneden.</div>';
+    return;
+  }
+
+  // Bygg opp map: avdeling → sjekkpunkter[] (sortert etter dato fra SQL)
+  const spMap = {};
+  sjekkpunkter.forEach(s => {
+    if (!spMap[s.avdeling]) spMap[s.avdeling] = [];
+    spMap[s.avdeling].push(s);
+  });
+
+  container.innerHTML = avd.map(r => {
+    const budsjett  = r.budsjett != null ? Number(r.budsjett) : null;
+    const fakturert = Number(r.fakturert || 0);
+    const restordre = Number(r.restordre || 0);
+    const pstRaw    = r.grad != null ? Number(r.grad) : null;
+    const farge     = pstRaw != null ? gradFarge(pstRaw) : 'var(--muted)';
+    const erValgt   = avdFilter === r.avdeling;
+
+    const avdSp = spMap[r.avdeling] || [];
+
+    const spBarer = avdSp.map(s => {
+      const kum     = Number(s.fakturert_kumulativ || 0);
+      const pst     = budsjett > 0 ? clamp(kum / budsjett * 100, 0, 100) : 0;
+      const harData = kum !== 0;
+      const label   = fmtDato(s.sjekkpunkt_dato);
+      return `
+        <div class="kort-uke-rad">
+          <span class="kort-uke-label">${label}</span>
+          <div class="kort-uke-bar">
+            <div class="kort-uke-fill ${pst >= 100 ? 'groen' : ''}" style="width:${pst.toFixed(1)}%"></div>
+          </div>
+          <span class="kort-uke-tall ${harData ? 'har-data' : ''}">
+            ${harData ? fmt(kum) + ' (' + pst.toFixed(0) + '%)' : '–'}
+          </span>
+        </div>`;
+    }).join('');
+
+    const ingenData = avdSp.length === 0
+      ? '<span style="color:var(--muted);font-size:0.82rem">Ingen faktureringsdata ennå</span>'
+      : '';
+
+    return `
+      <div class="avd-kort ${erValgt ? 'valgt' : ''}">
+        <div class="avd-kort-header">
+          <span class="avd-kort-navn">${r.avdeling}</span>
+          <span class="avd-kort-grad" style="color:${farge}">${pstRaw != null ? pstRaw.toFixed(1) + '%' : '–'}</span>
+        </div>
+        <div class="avd-kort-tall">
+          <div class="avd-kort-tall-item">
+            <span class="avd-kort-tall-label">Budsjett</span>
+            <span class="avd-kort-tall-value" style="${budsjett == null ? 'color:var(--muted);font-size:0.78rem' : ''}">${budsjett != null ? fmt(budsjett) : 'Ikke satt'}</span>
+          </div>
+          <div class="avd-kort-tall-item">
+            <span class="avd-kort-tall-label">Fakturert</span>
+            <span class="avd-kort-tall-value">${fmt(fakturert)}</span>
+          </div>
+          <div class="avd-kort-tall-item">
+            <span class="avd-kort-tall-label">Restordre</span>
+            <span class="avd-kort-tall-value">${fmt(restordre)}</span>
+          </div>
+        </div>
+        <div class="avd-kort-uker">${spBarer || ingenData}</div>
+      </div>`;
+  }).join('');
+}
+
+setInterval(() => location.reload(), 60 * 60 * 1000);
+</script>
+</body>
+</html>
