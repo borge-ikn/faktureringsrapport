@@ -1017,6 +1017,21 @@
       </thead>
       <tbody id="restordre-tbody"></tbody>
     </table>
+
+    <div style="margin-top:2rem">
+      <div class="pall-tittel" style="margin-bottom:1rem">Timer ført denne måneden — per avdeling</div>
+      <table class="restordre-tabell" id="timer-tabell">
+        <thead>
+          <tr>
+            <th>Avdeling</th>
+            <th>Timer totalt</th>
+            <th>Fakturerbare timer</th>
+            <th>Andel fakturerbar</th>
+          </tr>
+        </thead>
+        <tbody id="timer-tbody"><tr><td colspan="4" class="detalj-spinner">Laster…</td></tr></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Kommentar-modal -->
@@ -1664,6 +1679,43 @@ function visRestordreSide() {
   document.getElementById('restordre-side').style.display  = 'block';
   document.getElementById('restordre-mnd-label').textContent = maanedLabel(valgtMaaned);
   renderRestordreTabell();
+  renderTimerTabell();
+}
+
+async function renderTimerTabell() {
+  const tbody = document.getElementById('timer-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" class="detalj-spinner">Laster…</td></tr>';
+
+  const { data, error } = await sb.rpc('fn_timer_per_avdeling', { p_maaned: valgtMaaned });
+  if (error || !data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="detalj-spinner" style="color:var(--muted)">Ingen timedata for denne måneden.</td></tr>';
+    return;
+  }
+
+  const totTimer = data.reduce((s, r) => s + Number(r.total_timer), 0);
+  const totFakt  = data.reduce((s, r) => s + Number(r.fakturerbare_timer), 0);
+  const totAndel = totTimer > 0 ? (totFakt / totTimer * 100).toFixed(1) : '–';
+
+  const fmtTimer = t => Number(t).toLocaleString('no-NO', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' t';
+  const andelFarge = a => a >= 90 ? 'var(--green)' : a >= 70 ? 'var(--yellow)' : 'var(--red)';
+
+  tbody.innerHTML = data.map(r => {
+    const andel = r.andel_fakturerbar != null ? Number(r.andel_fakturerbar) : null;
+    return `<tr>
+      <td>${r.avdeling}</td>
+      <td>${fmtTimer(r.total_timer)}</td>
+      <td>${fmtTimer(r.fakturerbare_timer)}</td>
+      <td style="font-weight:600;color:${andel != null ? andelFarge(andel) : 'var(--muted)'}">
+        ${andel != null ? andel.toFixed(1) + '%' : '–'}
+      </td>
+    </tr>`;
+  }).join('') + `
+    <tr style="border-top:2px solid var(--border);font-weight:700;background:var(--surface2)">
+      <td>Totalt</td>
+      <td>${fmtTimer(totTimer)}</td>
+      <td>${fmtTimer(totFakt)}</td>
+      <td style="color:${andelFarge(parseFloat(totAndel))}">${totAndel}%</td>
+    </tr>`;
 }
 
 async function renderRestordreTabell() {
@@ -1757,10 +1809,16 @@ async function toggleDetaljer(avdeling) {
           <th>Ordreverdi</th>
           <th>Fakturert</th>
           <th>Restordre</th>
+          <th>Timer totalt</th>
+          <th>Fakturerbare</th>
         </tr>
       </thead>
       <tbody>
-        ${data.map(o => `
+        ${data.map(o => {
+          const harTimer = Number(o.total_timer) > 0;
+          const timerTxt = harTimer ? Number(o.total_timer).toLocaleString('no-NO', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' t' : '–';
+          const faktTxt  = harTimer ? Number(o.fakturerbare_timer).toLocaleString('no-NO', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' t' : '–';
+          return `
           <tr>
             <td style="text-align:left;color:var(--muted)">${o.order_number}</td>
             <td style="text-align:left">${o.kontakt || '–'}</td>
@@ -1768,7 +1826,10 @@ async function toggleDetaljer(avdeling) {
             <td>${fmt(o.ordre_verdi)}</td>
             <td>${fmt(o.fakturert)}</td>
             <td style="font-weight:600">${fmt(o.restordre)}</td>
-          </tr>`).join('')}
+            <td style="color:var(--muted)">${timerTxt}</td>
+            <td style="color:${harTimer && Number(o.fakturerbare_timer) < Number(o.total_timer) ? 'var(--yellow)' : 'var(--muted)'}">${faktTxt}</td>
+          </tr>`;
+        }).join('')}
       </tbody>
     </table>`;
 }
