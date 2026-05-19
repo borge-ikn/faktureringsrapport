@@ -903,6 +903,47 @@
     .avvik-negativ { color: var(--yellow); font-weight: 600; }
     .avvik-null    { color: var(--green); font-weight: 600; }
 
+    /* Faner for klar-for-fakturering */
+    .klar-faner {
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+    }
+    .klar-fane {
+      padding: 0.35rem 0.85rem;
+      font-size: 0.82rem;
+      font-weight: 500;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .klar-fane:hover { background: var(--surface2); }
+    .klar-fane.aktiv-fane-venter  { background: #fef3c7; border-color: #d97706; color: #92400e; font-weight: 700; }
+    .klar-fane.aktiv-fane-fakturert { background: #d1fae5; border-color: #059669; color: #065f46; font-weight: 700; }
+    .klar-fane.aktiv-fane-alle    { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+
+    .klar-kun-avvik-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      cursor: pointer;
+      margin-left: 0.5rem;
+      white-space: nowrap;
+    }
+    .klar-kun-avvik-wrapper input { cursor: pointer; }
+
+    /* Radmarkering i tabellen */
+    .klar-tabell tbody tr.rad-avvik-stor td { background: #fff5f5; }
+    .klar-tabell tbody tr.rad-avvik-liten td { background: #fffbeb; }
+    .klar-tabell tbody tr.rad-avvik-stor:hover td { background: #fee2e2; }
+    .klar-tabell tbody tr.rad-avvik-liten:hover td { background: #fef3c7; }
+
     .klar-oppsummering {
       display: flex;
       gap: 1.5rem;
@@ -1037,12 +1078,22 @@
         <select id="klar-filter-avd">
           <option value="">Alle avdelinger</option>
         </select>
-        <select id="klar-filter-status">
+        <div class="klar-faner">
+          <button class="klar-fane aktiv-fane-venter" data-status="venter" onclick="setKlarFane(this)">🔔 Klar for fakturering</button>
+          <button class="klar-fane" data-status="fakturert" onclick="setKlarFane(this)">✅ Fakturert</button>
+          <button class="klar-fane" data-status="" onclick="setKlarFane(this)">Alle</button>
+        </div>
+        <label class="klar-kun-avvik-wrapper" id="klar-kun-avvik-wrapper" style="display:none">
+          <input type="checkbox" id="klar-kun-avvik" onchange="renderKlarTabell()"> Kun med avvik
+        </label>
+        <!-- Hidden select kept for JS compatibility -->
+        <select id="klar-filter-status" style="display:none">
           <option value="">Alle</option>
-          <option value="venter">Ikke fakturert</option>
+          <option value="venter" selected>Ikke fakturert</option>
           <option value="fakturert">Fakturert</option>
           <option value="avvik">Med avvik</option>
         </select>
+        <!-- /Hidden select -->
       </div>
     </div>
     <div class="klar-oppsummering" id="klar-oppsummering"></div>
@@ -1587,9 +1638,32 @@ document.getElementById('klar-tilbake-knapp').addEventListener('click', () => {
   document.getElementById('klar-side').style.display       = 'none';
   document.getElementById('rapport-visning').style.display = 'block';
 });
-document.getElementById('klar-filter-maaned').addEventListener('change', renderKlarTabell);
-document.getElementById('klar-filter-avd').addEventListener('change', renderKlarTabell);
+document.getElementById('klar-filter-maaned').addEventListener('change', lastKlarData);
+document.getElementById('klar-filter-avd').addEventListener('change', lastKlarData);
 document.getElementById('klar-filter-status').addEventListener('change', renderKlarTabell);
+
+function setKlarFane(btn) {
+  // Oppdater hidden select (bevarer lastKlarData-kompatibilitet)
+  document.getElementById('klar-filter-status').value = btn.dataset.status;
+
+  // Oppdater fane-styling
+  document.querySelectorAll('.klar-fane').forEach(b => {
+    b.classList.remove('aktiv-fane-venter', 'aktiv-fane-fakturert', 'aktiv-fane-alle');
+  });
+  const statusKls = btn.dataset.status === 'venter' ? 'aktiv-fane-venter'
+    : btn.dataset.status === 'fakturert' ? 'aktiv-fane-fakturert'
+    : 'aktiv-fane-alle';
+  btn.classList.add(statusKls);
+
+  // Vis/skjul "Kun med avvik"-checkbox (bare relevant for Fakturert og Alle)
+  const kunAvvikWrapper = document.getElementById('klar-kun-avvik-wrapper');
+  kunAvvikWrapper.style.display = btn.dataset.status !== 'venter' ? 'flex' : 'none';
+  if (btn.dataset.status === 'venter') {
+    document.getElementById('klar-kun-avvik').checked = false;
+  }
+
+  renderKlarTabell();
+}
 
 let klarData = [];
 
@@ -1650,46 +1724,120 @@ async function lastKlarData() {
 
 function renderKlarTabell() {
   const statusFilter = document.getElementById('klar-filter-status').value;
+  const kunAvvik     = document.getElementById('klar-kun-avvik')?.checked || false;
 
   let rader = klarData;
   if (statusFilter === 'venter')    rader = rader.filter(r => !r.er_fakturert);
-  if (statusFilter === 'fakturert') rader = rader.filter(r => r.er_fakturert);
-  if (statusFilter === 'avvik')     rader = rader.filter(r => r.avvik_beloep !== 0);
+  if (statusFilter === 'fakturert') rader = rader.filter(r =>  r.er_fakturert);
+  if (statusFilter === 'avvik')     rader = rader.filter(r => Number(r.avvik_beloep) !== 0);
+  if (kunAvvik && statusFilter !== 'venter') {
+    rader = rader.filter(r => Number(r.avvik_beloep) !== 0);
+  }
 
-  // Oppsummering
-  const totForventet  = rader.reduce((s, r) => s + Number(r.forventet_beloep || 0), 0);
-  const totFakturert  = rader.reduce((s, r) => s + Number(r.fakturert_beloep || 0), 0);
-  const totAvvik      = totFakturert - totForventet;
-  const antallVenter  = rader.filter(r => !r.er_fakturert).length;
-  const antallAvvik   = rader.filter(r => Number(r.avvik_beloep) !== 0).length;
+  // ── Oppsummeringstall ──
+  const erVenterFane    = statusFilter === 'venter';
+  const erFakturertFane = statusFilter === 'fakturert';
 
-  document.getElementById('klar-oppsummering').innerHTML = `
-    <div class="klar-stat">
-      <div class="klar-stat-label">Ordrer totalt</div>
-      <div class="klar-stat-verdi">${rader.length}</div>
-    </div>
-    <div class="klar-stat">
-      <div class="klar-stat-label">Ikke fakturert</div>
-      <div class="klar-stat-verdi" style="color:${antallVenter > 0 ? 'var(--yellow)' : 'var(--green)'}">${antallVenter}</div>
-    </div>
-    <div class="klar-stat">
-      <div class="klar-stat-label">Forventet</div>
-      <div class="klar-stat-verdi">${fmt(totForventet)}</div>
-    </div>
-    <div class="klar-stat">
-      <div class="klar-stat-label">Fakturert</div>
-      <div class="klar-stat-verdi">${fmt(totFakturert)}</div>
-    </div>
-    <div class="klar-stat">
-      <div class="klar-stat-label">Avvik totalt</div>
-      <div class="klar-stat-verdi ${totAvvik > 0 ? 'avvik-positiv' : totAvvik < 0 ? 'avvik-negativ' : 'avvik-null'}">
-        ${totAvvik >= 0 ? '+' : ''}${fmt(totAvvik)}
+  const totForventet = rader.reduce((s, r) => s + Number(r.forventet_beloep || 0), 0);
+  const totFakturert = rader.reduce((s, r) => s + Number(r.fakturert_beloep || 0), 0);
+  const totAvvik     = totFakturert - totForventet;
+  const antallVenter = rader.filter(r => !r.er_fakturert).length;
+  const antallFakt   = rader.filter(r =>  r.er_fakturert).length;
+  const antallAvvik  = rader.filter(r => Number(r.avvik_beloep) !== 0).length;
+  const avvikSum     = rader.filter(r => Number(r.avvik_beloep) !== 0)
+                            .reduce((s, r) => s + Math.abs(Number(r.avvik_beloep)), 0);
+
+  let oppsummeringHTML = '';
+  if (erVenterFane) {
+    // Fokus: hva venter på fakturering
+    const eldst = rader.length
+      ? rader.reduce((mx, r) => new Date(r.first_seen) < new Date(mx.first_seen) ? r : mx)
+      : null;
+    const eldstTxt = eldst
+      ? new Date(eldst.first_seen).toLocaleString('no-NO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+      : '–';
+    oppsummeringHTML = `
+      <div class="klar-stat">
+        <div class="klar-stat-label">Venter på fakturering</div>
+        <div class="klar-stat-verdi" style="color:${antallVenter > 0 ? 'var(--yellow)' : 'var(--green)'}">${antallVenter}</div>
       </div>
-    </div>
-    <div class="klar-stat">
-      <div class="klar-stat-label">Med avvik</div>
-      <div class="klar-stat-verdi" style="color:${antallAvvik > 0 ? 'var(--red)' : 'var(--green)'}">${antallAvvik}</div>
-    </div>`;
+      <div class="klar-stat">
+        <div class="klar-stat-label">Forventet beløp totalt</div>
+        <div class="klar-stat-verdi">${fmt(totForventet)}</div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Klar siden (eldst)</div>
+        <div class="klar-stat-verdi" style="font-size:0.9rem">${eldstTxt}</div>
+      </div>`;
+  } else if (erFakturertFane) {
+    // Fokus: avvik etter fakturering
+    const avvikPst = totForventet !== 0 ? (totAvvik / totForventet * 100) : 0;
+    oppsummeringHTML = `
+      <div class="klar-stat">
+        <div class="klar-stat-label">Fakturerte ordrer</div>
+        <div class="klar-stat-verdi">${antallFakt}</div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Forventet</div>
+        <div class="klar-stat-verdi">${fmt(totForventet)}</div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Faktisk fakturert</div>
+        <div class="klar-stat-verdi">${fmt(totFakturert)}</div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Avvik totalt</div>
+        <div class="klar-stat-verdi ${totAvvik > 0 ? 'avvik-positiv' : totAvvik < 0 ? 'avvik-negativ' : 'avvik-null'}">
+          ${totAvvik >= 0 ? '+' : ''}${fmt(totAvvik)}
+          <span style="font-weight:400;font-size:0.8rem;color:var(--muted)">
+            (${avvikPst >= 0 ? '+' : ''}${avvikPst.toFixed(1)}%)
+          </span>
+        </div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Ordrer med avvik</div>
+        <div class="klar-stat-verdi" style="color:${antallAvvik > 0 ? 'var(--red)' : 'var(--green)'}">
+          ${antallAvvik}
+          ${antallFakt > 0 ? `<span style="font-weight:400;font-size:0.8rem;color:var(--muted)">(${Math.round(antallAvvik/antallFakt*100)}%)</span>` : ''}
+        </div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Sum avviksbeløp</div>
+        <div class="klar-stat-verdi" style="color:${avvikSum > 0 ? 'var(--red)' : 'var(--green)'}">
+          ${fmt(avvikSum)}
+        </div>
+      </div>`;
+  } else {
+    // Alle
+    oppsummeringHTML = `
+      <div class="klar-stat">
+        <div class="klar-stat-label">Ordrer totalt</div>
+        <div class="klar-stat-verdi">${rader.length}</div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Ikke fakturert</div>
+        <div class="klar-stat-verdi" style="color:${antallVenter > 0 ? 'var(--yellow)' : 'var(--green)'}">${antallVenter}</div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Forventet</div>
+        <div class="klar-stat-verdi">${fmt(totForventet)}</div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Fakturert</div>
+        <div class="klar-stat-verdi">${fmt(totFakturert)}</div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Avvik totalt</div>
+        <div class="klar-stat-verdi ${totAvvik > 0 ? 'avvik-positiv' : totAvvik < 0 ? 'avvik-negativ' : 'avvik-null'}">
+          ${totAvvik >= 0 ? '+' : ''}${fmt(totAvvik)}
+        </div>
+      </div>
+      <div class="klar-stat">
+        <div class="klar-stat-label">Med avvik</div>
+        <div class="klar-stat-verdi" style="color:${antallAvvik > 0 ? 'var(--red)' : 'var(--green)'}">${antallAvvik}</div>
+      </div>`;
+  }
+  document.getElementById('klar-oppsummering').innerHTML = oppsummeringHTML;
 
   if (!rader.length) {
     document.getElementById('klar-tbody').innerHTML =
@@ -1701,10 +1849,15 @@ function renderKlarTabell() {
     const avvik    = Number(r.avvik_beloep);
     const avvikPst = r.avvik_pst != null ? Number(r.avvik_pst) : null;
     const avvikKls = avvik > 0 ? 'avvik-positiv' : avvik < 0 ? 'avvik-negativ' : 'avvik-null';
-    const avvikTxt = avvik === 0 ? '–'
-      : (avvik > 0 ? '+' : '') + fmt(avvik);
+    const avvikTxt = avvik === 0 ? '–' : (avvik > 0 ? '+' : '') + fmt(avvik);
     const avvikPstTxt = avvikPst == null ? '–'
       : (avvikPst > 0 ? '+' : '') + avvikPst.toFixed(1) + '%';
+
+    // Radmarkering: stor avvik (>5%) = rød, liten avvik = gul
+    const absAvvikPst = avvikPst != null ? Math.abs(avvikPst) : 0;
+    const radKls = r.er_fakturert && avvik !== 0
+      ? (absAvvikPst >= 5 ? 'rad-avvik-stor' : 'rad-avvik-liten')
+      : '';
 
     const statusBadge = r.er_fakturert
       ? '<span class="status-badge fakturert">Fakturert</span>'
@@ -1715,14 +1868,14 @@ function renderKlarTabell() {
       day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
     });
 
-    return `<tr>
+    return `<tr class="${radKls}">
       <td style="color:var(--muted);font-variant-numeric:tabular-nums">${r.order_number}</td>
       <td>${r.customer_name || '–'}</td>
       <td style="color:var(--muted)">${r.department_name || '–'}</td>
       <td style="color:var(--muted)">${r.delivery_date ? fmtDato(r.delivery_date) : '–'}</td>
       <td style="color:var(--muted);font-size:0.8rem">${klarTxt}</td>
       <td>${fmt(r.forventet_beloep)}</td>
-      <td>${r.er_fakturert ? fmt(r.fakturert_beloep) : '–'}</td>
+      <td>${r.er_fakturert ? fmt(r.fakturert_beloep) : '<span style="color:var(--muted)">–</span>'}</td>
       <td class="${avvikKls}">${avvikTxt}</td>
       <td class="${avvikKls}">${avvikPstTxt}</td>
       <td>${statusBadge}</td>
