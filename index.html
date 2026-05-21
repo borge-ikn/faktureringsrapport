@@ -1500,6 +1500,14 @@
             <div class="cfo-diagram-tittel">KPI-utvikling (%)</div>
             <canvas id="chart-kpi-pst" height="220"></canvas>
           </div>
+          <div class="cfo-diagram-kort">
+            <div class="cfo-diagram-tittel">Timepris — Faktisk vs Budsjett (kr/t)</div>
+            <canvas id="chart-timepris" height="220"></canvas>
+          </div>
+          <div class="cfo-diagram-kort">
+            <div class="cfo-diagram-tittel">Nye kontrakter — Tilbud for perioden</div>
+            <canvas id="chart-kontrakter" height="220"></canvas>
+          </div>
         </div>
         <div class="cfo-raadat-seksjon">
           <div class="cfo-raadat-tittel">Råtall per måned</div>
@@ -2621,7 +2629,7 @@ async function lastCfoDrilldown(kode, navn) {
   document.getElementById('cfo-tittel').textContent              = 'CFO KPI — Avd ' + navn;
 
   // Nullstill diagrammer
-  const canvasIds = ['chart-oms','chart-db2','chart-timer','chart-kpi-pst'];
+  const canvasIds = ['chart-oms','chart-db2','chart-timer','chart-kpi-pst','chart-timepris','chart-kontrakter'];
   canvasIds.forEach(id => {
     if (cfoCharts[id]) { cfoCharts[id].destroy(); delete cfoCharts[id]; }
   });
@@ -2802,6 +2810,104 @@ async function lastCfoDrilldown(kode, navn) {
     }
   });
 
+  // ── Diagram 5: Timepris ──
+  cfoCharts['chart-timepris'] = new Chart(document.getElementById('chart-timepris'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Faktisk timepris',
+          data: data.map(r => r.timepris != null && Number(r.timepris) > 0 ? Number(r.timepris) : null),
+          borderColor: '#1c3461',
+          backgroundColor: 'rgba(28,52,97,0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4
+        },
+        {
+          label: 'Budsjett timepris',
+          data: data.map(r => Number(r.bud_timepris) > 0 ? Number(r.bud_timepris) : null),
+          borderColor: '#e8a01c',
+          borderDash: [5,4],
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.parsed.y != null ? Math.round(ctx.parsed.y).toLocaleString('no-NO') + ' kr/t' : '–') } }
+      },
+      scales: {
+        y: { ticks: { font: { size: 11 }, callback: v => Math.round(v).toLocaleString('no-NO') + ' kr/t' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        x: { ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  // ── Diagram 6: Nye kontrakter (hentes fra fn_cfo_nye_kontrakter) ──
+  const psNavn = await hentPsAvdelingNavn(kode);
+  if (psNavn) {
+    const { data: kdata } = await sb.rpc('fn_cfo_nye_kontrakter', {
+      p_ps_avdeling_navn: psNavn,
+      p_aar: cfoAar
+    });
+    const kd = kdata || [];
+    cfoCharts['chart-kontrakter'] = new Chart(document.getElementById('chart-kontrakter'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Alle tilbud (NOK)',
+            data: kd.map(r => Number(r.beloep) || 0),
+            backgroundColor: 'rgba(28,52,97,0.55)',
+            yAxisID: 'y',
+            order: 2
+          },
+          {
+            label: 'Aksepterte tilbud (NOK)',
+            data: kd.map(r => Number(r.beloep_akseptert) || 0),
+            backgroundColor: 'rgba(5,150,105,0.65)',
+            yAxisID: 'y',
+            order: 3
+          },
+          {
+            label: 'Antall tilbud',
+            data: kd.map(r => Number(r.antall) || 0),
+            type: 'line',
+            borderColor: '#e8a01c',
+            backgroundColor: 'transparent',
+            pointBackgroundColor: '#e8a01c',
+            yAxisID: 'y2',
+            tension: 0.3,
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+        scales: {
+          y:  { position: 'left',  ticks: { font: { size: 11 }, callback: v => Math.round(v/1000) + 'k' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+          y2: { position: 'right', ticks: { font: { size: 11 }, callback: v => v + ' stk' }, grid: { drawOnChartArea: false } },
+          x:  { ticks: { font: { size: 11 } } }
+        }
+      }
+    });
+    // legg til kontrakter-rader i rådata-tabellen
+    window._cfoKontrakter = kd;
+  } else {
+    document.getElementById('chart-kontrakter').parentElement.style.display = 'none';
+    window._cfoKontrakter = null;
+  }
+
   // ── Rådata-tabell ──
   const thead = document.getElementById('cfo-raadat-thead');
   const tbody = document.getElementById('cfo-raadat-tbody');
@@ -2836,7 +2942,34 @@ async function lastCfoDrilldown(kode, navn) {
     kpiRad('Kap.bud', 'bud_kapasitet', fmtTimer, 'bud-rad') +
     kpiRad('Arb KPI', 'arbeid_kpi_pst', fmtPst, 'kpi-rad') +
     kpiRad('Tot. t.', 'total_timer', fmtTimer) +
-    kpiRad('Tim KPI', 'timer_kpi_pst', fmtPst, 'kpi-rad');
+    kpiRad('Tim KPI', 'timer_kpi_pst', fmtPst, 'kpi-rad') +
+    kpiRad('Timepris', 'timepris', v => v != null && Number(v) > 0 ? Math.round(Number(v)).toLocaleString('no-NO') + ' kr/t' : '–') +
+    kpiRad('Bud timepris', 'bud_timepris', v => Number(v) > 0 ? Math.round(Number(v)).toLocaleString('no-NO') + ' kr/t' : '–', 'bud-rad') +
+    (() => {
+      if (!window._cfoKontrakter) return '';
+      const kd = window._cfoKontrakter;
+      const mndMap = {};
+      kd.forEach(r => { mndMap[new Date(r.maaned).getMonth()] = r; });
+      const celle = (m, fn) => { const r = mndMap[m]; return `<td>${r ? fn(r) : '–'}</td>`; };
+      const totAnt  = kd.reduce((s,r) => s + Number(r.antall), 0);
+      const totBel  = kd.reduce((s,r) => s + Number(r.beloep), 0);
+      const totAks  = kd.reduce((s,r) => s + Number(r.antall_akseptert), 0);
+      const totAksB = kd.reduce((s,r) => s + Number(r.beloep_akseptert), 0);
+      return `
+        <tr><td>Tilbud ant.</td>${Array.from({length:12},(_,m)=>celle(m,r=>r.antall)).join('')}<td>${totAnt}</td></tr>
+        <tr><td>Tilbud beløp</td>${Array.from({length:12},(_,m)=>celle(m,r=>fmtNOKk(r.beloep))).join('')}<td>${fmtNOKk(totBel)}</td></tr>
+        <tr class="kpi-rad"><td>Akseptert ant.</td>${Array.from({length:12},(_,m)=>celle(m,r=>r.antall_akseptert)).join('')}<td>${totAks}</td></tr>
+        <tr class="kpi-rad"><td>Akseptert beløp</td>${Array.from({length:12},(_,m)=>celle(m,r=>fmtNOKk(r.beloep_akseptert))).join('')}<td>${fmtNOKk(totAksB)}</td></tr>`;
+    })();
+}
+
+async function hentPsAvdelingNavn(avdKode) {
+  const { data } = await sb.from('cfo_kpi_budsjett')
+    .select('ps_avdeling_navn')
+    .eq('avdeling_kode', avdKode)
+    .not('ps_avdeling_navn', 'is', null)
+    .limit(1);
+  return data?.[0]?.ps_avdeling_navn || null;
 }
 
 function cfoChartOptions(yLabel, y2Label) {
@@ -2879,20 +3012,24 @@ async function lastCfoBudsjettAdmin() {
   }
 
   const { data: eksist } = await sb.from('cfo_kpi_budsjett')
-    .select('avdeling_kode,avdeling_navn,maaned,bud_oms,bud_kapasitet,bud_vk,bud_db2')
+    .select('avdeling_kode,avdeling_navn,maaned,bud_oms,bud_kapasitet,bud_vk,bud_db2,bud_timepris,ps_avdeling_navn')
     .gte('maaned', cfoAar + '-01-01')
     .lte('maaned', cfoAar + '-12-31');
 
   const budMap = {};
+  const psNavnMap = {};
   (eksist || []).forEach(r => {
     if (!budMap[r.avdeling_kode]) budMap[r.avdeling_kode] = {};
     const mnd = new Date(r.maaned).getMonth();
     budMap[r.avdeling_kode][mnd] = r;
+    if (r.ps_avdeling_navn && !psNavnMap[r.avdeling_kode]) {
+      psNavnMap[r.avdeling_kode] = r.ps_avdeling_navn;
+    }
   });
 
   grid.innerHTML = avd.map(a => {
-    const rader = ['Bud Oms','Bud Kap.','Bud VK','Bud DB2'].map((etikette, ri) => {
-      const felt = ['bud_oms','bud_kapasitet','bud_vk','bud_db2'][ri];
+    const rader = ['Bud Oms','Bud Kap.','Bud VK','Bud DB2','Bud Timepris'].map((etikette, ri) => {
+      const felt = ['bud_oms','bud_kapasitet','bud_vk','bud_db2','bud_timepris'][ri];
       const celler = Array.from({length: 12}, (_, m) => {
         const val = budMap[a.avdeling_kode]?.[m]?.[felt] ?? '';
         return `<td><input class="cfo-bud-input"
@@ -2907,11 +3044,21 @@ async function lastCfoBudsjettAdmin() {
       return `<tr><td style="color:var(--muted);font-size:0.78rem;padding:0.35rem 0.6rem">${etikette}</td>${celler}</tr>`;
     }).join('');
 
+    const psNavn = psNavnMap[a.avdeling_kode] || '';
+
     return `
       <div class="cfo-bud-kort">
         <div class="cfo-bud-kort-tittel">
           <span>Avd ${a.avdeling_navn || a.avdeling_kode}</span>
           <button class="cfo-lagre-knapp" onclick="lagreCfoBudsjett('${a.avdeling_kode}')">Lagre</button>
+        </div>
+        <div style="margin-bottom:0.6rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+          <label style="font-size:0.78rem;color:var(--muted);white-space:nowrap">Prodsys avd.navn:</label>
+          <input class="cfo-ps-navn-input"
+            data-avd="${a.avdeling_kode}"
+            value="${psNavn}"
+            placeholder="f.eks. Sandnes"
+            style="font-size:0.82rem;padding:0.25rem 0.5rem;border:1px solid var(--border);border-radius:6px;width:160px">
         </div>
         <div style="overflow-x:auto">
           <table class="cfo-bud-tabell">
@@ -2939,6 +3086,9 @@ async function lagreCfoBudsjett(avdKode) {
     perMaaned[m][felt] = inp.value !== '' ? Number(inp.value) : 0;
   });
 
+  const psNavnInp = document.querySelector(`.cfo-ps-navn-input[data-avd="${avdKode}"]`);
+  const psAvdNavn = psNavnInp ? psNavnInp.value.trim() || null : null;
+
   let feil = 0;
   for (const [m, v] of Object.entries(perMaaned)) {
     const maanedDato = `${cfoAar}-${String(parseInt(m)+1).padStart(2,'0')}-01`;
@@ -2947,14 +3097,16 @@ async function lagreCfoBudsjett(avdKode) {
       : (v.bud_oms || 0) - (v.bud_vk || 0);
 
     const { error } = await sb.rpc('fn_lagre_cfo_budsjett', {
-      p_avdeling_kode: avdKode,
-      p_avdeling_navn: avdNavn,
-      p_maaned:        maanedDato,
-      p_bud_oms:       v.bud_oms || 0,
-      p_bud_kapasitet: v.bud_kapasitet || 0,
-      p_bud_vk:        v.bud_vk || 0,
-      p_bud_db2:       db2,
-      p_updated_by:    gjeldendeBruker
+      p_avdeling_kode:   avdKode,
+      p_avdeling_navn:   avdNavn,
+      p_maaned:          maanedDato,
+      p_bud_oms:         v.bud_oms || 0,
+      p_bud_kapasitet:   v.bud_kapasitet || 0,
+      p_bud_vk:          v.bud_vk || 0,
+      p_bud_db2:         db2,
+      p_updated_by:      gjeldendeBruker,
+      p_bud_timepris:    v.bud_timepris || 0,
+      p_ps_avdeling_navn: psAvdNavn
     });
     if (error) feil++;
   }
