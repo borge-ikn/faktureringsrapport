@@ -1525,6 +1525,16 @@
         <select id="kostnad-avd-filter">
           <option value="">Alle avdelinger</option>
         </select>
+        <label style="font-size:0.83rem; color:var(--muted)">Status:</label>
+        <select id="kostnad-status-filter">
+          <option value="">Alle statuser</option>
+          <option value="Ordre opprettet">Ordre opprettet</option>
+          <option value="Ordre delfakturert">Ordre delfakturert</option>
+          <option value="Ordre klar for fakturering">Ordre klar for fakturering</option>
+          <option value="Ordre på vent">Ordre på vent</option>
+          <option value="Klar for delfakturering">Klar for delfakturering</option>
+          <option value="Ordre sendt">Ordre sendt</option>
+        </select>
       </div>
     </div>
     <div class="kostnad-kpi-rad" id="kostnad-kpi-rad"></div>
@@ -2539,7 +2549,8 @@ async function toggleDetaljer(avdeling) {
 
 // ── Kostnadskontroll ─────────────────────────────────────────────────────
 let kostnadData = [];
-let valgtKostnadAvd = '';
+let valgtKostnadAvd    = '';
+let valgtKostnadStatus = '';
 
 document.getElementById('kostnadskontroll-knapp').addEventListener('click', visKostnadskontrollSide);
 document.getElementById('kostnadskontroll-tilbake-knapp').addEventListener('click', () => {
@@ -2548,6 +2559,10 @@ document.getElementById('kostnadskontroll-tilbake-knapp').addEventListener('clic
 });
 document.getElementById('kostnad-avd-filter').addEventListener('change', function() {
   valgtKostnadAvd = this.value;
+  lastKostnadskontrollData();
+});
+document.getElementById('kostnad-status-filter').addEventListener('change', function() {
+  valgtKostnadStatus = this.value;
   lastKostnadskontrollData();
 });
 
@@ -2578,7 +2593,8 @@ async function lastKostnadskontrollData() {
   document.getElementById('kostnad-kpi-rad').innerHTML = '';
 
   const params = {};
-  if (valgtKostnadAvd) params.p_avdeling = valgtKostnadAvd;
+  if (valgtKostnadAvd)    params.p_avdeling = valgtKostnadAvd;
+  if (valgtKostnadStatus) params.p_status   = valgtKostnadStatus;
 
   const { data, error } = await sb.rpc('fn_kostnadskontroll', params);
   if (error || !data) {
