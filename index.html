@@ -1139,6 +1139,80 @@
     }
     .klar-knapp:hover { background: rgba(255,255,255,0.2); }
 
+    .kostnadskontroll-knapp {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 6px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.83rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: #fff;
+    }
+    .kostnadskontroll-knapp:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── Kostnadskontroll-side ── */
+    .kostnad-topplinje {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .kostnad-tittel { font-size: 1rem; font-weight: 700; }
+    .kostnad-filter-gruppe {
+      display: flex; gap: 0.5rem; align-items: center;
+      margin-left: auto;
+    }
+    .kostnad-filter-gruppe select {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.83rem;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .kostnad-kpi-rad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 700px) { .kostnad-kpi-rad { grid-template-columns: 1fr; } }
+    .kostnad-tabell {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-size: 0.85rem;
+    }
+    .kostnad-tabell th {
+      background: var(--surface2);
+      padding: 0.65rem 0.8rem;
+      text-align: left;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .kostnad-tabell td {
+      padding: 0.6rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .kostnad-tabell tr:last-child td { border-bottom: none; }
+    .kostnad-tabell th.num,
+    .kostnad-tabell td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .kostnad-neg  { color: var(--red);    font-weight: 600; }
+    .kostnad-warn { color: var(--yellow); font-weight: 600; }
+
     .klar-tabell {
       width: 100%;
       border-collapse: collapse;
@@ -1305,6 +1379,7 @@
       <button class="restordre-knapp" id="restordre-knapp">📊 Grad mot restordre</button>
       <button class="cfo-knapp" id="cfo-knapp">📈 CFO KPI</button>
       <button class="admin-knapp" id="admin-knapp">⚙ Budsjett</button>
+      <button class="kostnadskontroll-knapp" id="kostnadskontroll-knapp">🔍 Kostnadskontroll</button>
       <div class="bruker-info">
         <span id="bruker-navn">–</span>
         <button class="logg-ut" id="logg-ut-knapp">Logg ut</button>
@@ -1436,6 +1511,40 @@
           </tr>
         </thead>
         <tbody id="timer-tbody"><tr><td colspan="4" class="detalj-spinner">Laster…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Kostnadskontroll-side -->
+  <div id="kostnadskontroll-side" style="display:none; padding:24px; max-width:1400px; margin:0 auto;">
+    <div class="kostnad-topplinje">
+      <button class="tilbake-knapp" id="kostnadskontroll-tilbake-knapp">← Tilbake til rapport</button>
+      <span class="kostnad-tittel">Kostnadskontroll – Ordre</span>
+      <div class="kostnad-filter-gruppe">
+        <label style="font-size:0.83rem; color:var(--muted)">Avdeling:</label>
+        <select id="kostnad-avd-filter">
+          <option value="">Alle avdelinger</option>
+        </select>
+      </div>
+    </div>
+    <div class="kostnad-kpi-rad" id="kostnad-kpi-rad"></div>
+    <div id="kostnadskontroll-tabell-container">
+      <table class="kostnad-tabell">
+        <thead>
+          <tr>
+            <th>Ordrenr.</th>
+            <th>Kunde</th>
+            <th>Avdeling</th>
+            <th>Status</th>
+            <th class="num">Ordreverdi</th>
+            <th class="num">Timer</th>
+            <th class="num">Timekostnad</th>
+            <th class="num">Inng. faktura</th>
+            <th class="num">Tot. kostnader</th>
+            <th class="num">Differanse</th>
+          </tr>
+        </thead>
+        <tbody id="kostnad-tbody"><tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1599,9 +1708,10 @@ sb.auth.onAuthStateChange((_event, session) => {
               || session.user.email
               || '–';
     document.getElementById('bruker-navn').textContent = navn.split(' ')[0];
-    document.getElementById('klar-knapp').style.display      = 'inline-flex';
-    document.getElementById('restordre-knapp').style.display = 'inline-flex';
-    document.getElementById('cfo-knapp').style.display       = 'inline-flex';
+    document.getElementById('klar-knapp').style.display              = 'inline-flex';
+    document.getElementById('restordre-knapp').style.display         = 'inline-flex';
+    document.getElementById('cfo-knapp').style.display               = 'inline-flex';
+    document.getElementById('kostnadskontroll-knapp').style.display  = 'inline-flex';
     if (isAdmin(session.user.email)) {
       document.getElementById('admin-knapp').style.display   = 'inline-flex';
       document.getElementById('cfo-tabs').style.display      = 'flex';
@@ -1811,19 +1921,21 @@ function renderPall(avd) {
 // ── Budsjettstyring ───────────────────────────────────────────────────────
 document.getElementById('admin-knapp').addEventListener('click', visBudsjettSide);
 document.getElementById('tilbake-knapp').addEventListener('click', () => {
-  document.getElementById('budsjett-side').style.display   = 'none';
-  document.getElementById('klar-side').style.display       = 'none';
-  document.getElementById('restordre-side').style.display  = 'none';
-  document.getElementById('cfo-kpi-side').style.display    = 'none';
-  document.getElementById('rapport-visning').style.display = 'block';
+  document.getElementById('budsjett-side').style.display          = 'none';
+  document.getElementById('klar-side').style.display              = 'none';
+  document.getElementById('restordre-side').style.display         = 'none';
+  document.getElementById('cfo-kpi-side').style.display           = 'none';
+  document.getElementById('kostnadskontroll-side').style.display  = 'none';
+  document.getElementById('rapport-visning').style.display        = 'block';
 });
 document.getElementById('kopier-forrige-knapp').addEventListener('click', kopierForrigeMaaned);
 
 function visBudsjettSide() {
-  document.getElementById('rapport-visning').style.display = 'none';
-  document.getElementById('klar-side').style.display       = 'none';
-  document.getElementById('restordre-side').style.display  = 'none';
-  document.getElementById('budsjett-side').style.display   = 'block';
+  document.getElementById('rapport-visning').style.display         = 'none';
+  document.getElementById('klar-side').style.display               = 'none';
+  document.getElementById('restordre-side').style.display          = 'none';
+  document.getElementById('kostnadskontroll-side').style.display   = 'none';
+  document.getElementById('budsjett-side').style.display           = 'block';
   document.getElementById('budsjett-mnd-label').textContent = maanedLabel(valgtMaaned);
   renderBudsjettTabell();
 }
@@ -2039,10 +2151,11 @@ function setKlarFane(btn) {
 let klarData = [];
 
 function visKlarSide() {
-  document.getElementById('rapport-visning').style.display = 'none';
-  document.getElementById('budsjett-side').style.display   = 'none';
-  document.getElementById('restordre-side').style.display  = 'none';
-  document.getElementById('klar-side').style.display       = 'block';
+  document.getElementById('rapport-visning').style.display         = 'none';
+  document.getElementById('budsjett-side').style.display           = 'none';
+  document.getElementById('restordre-side').style.display          = 'none';
+  document.getElementById('kostnadskontroll-side').style.display   = 'none';
+  document.getElementById('klar-side').style.display               = 'block';
 
   // Fyll måned-filter med tilgjengelige måneder
   const mndVelger = document.getElementById('klar-filter-maaned');
@@ -2262,10 +2375,11 @@ document.getElementById('restordre-tilbake-knapp').addEventListener('click', () 
 });
 
 function visRestordreSide() {
-  document.getElementById('rapport-visning').style.display = 'none';
-  document.getElementById('budsjett-side').style.display   = 'none';
-  document.getElementById('klar-side').style.display       = 'none';
-  document.getElementById('restordre-side').style.display  = 'block';
+  document.getElementById('rapport-visning').style.display         = 'none';
+  document.getElementById('budsjett-side').style.display           = 'none';
+  document.getElementById('klar-side').style.display               = 'none';
+  document.getElementById('kostnadskontroll-side').style.display   = 'none';
+  document.getElementById('restordre-side').style.display          = 'block';
   document.getElementById('restordre-mnd-label').textContent = maanedLabel(valgtMaaned);
   renderRestordreTabell();
   renderTimerTabell();
@@ -2423,6 +2537,108 @@ async function toggleDetaljer(avdeling) {
     </table>`;
 }
 
+// ── Kostnadskontroll ─────────────────────────────────────────────────────
+let kostnadData = [];
+let valgtKostnadAvd = '';
+
+document.getElementById('kostnadskontroll-knapp').addEventListener('click', visKostnadskontrollSide);
+document.getElementById('kostnadskontroll-tilbake-knapp').addEventListener('click', () => {
+  document.getElementById('kostnadskontroll-side').style.display = 'none';
+  document.getElementById('rapport-visning').style.display       = 'block';
+});
+document.getElementById('kostnad-avd-filter').addEventListener('change', function() {
+  valgtKostnadAvd = this.value;
+  lastKostnadskontrollData();
+});
+
+function visKostnadskontrollSide() {
+  document.getElementById('rapport-visning').style.display         = 'none';
+  document.getElementById('budsjett-side').style.display           = 'none';
+  document.getElementById('klar-side').style.display               = 'none';
+  document.getElementById('restordre-side').style.display          = 'none';
+  document.getElementById('cfo-kpi-side').style.display            = 'none';
+  document.getElementById('kostnadskontroll-side').style.display   = 'block';
+
+  // Fyll avdelings-filter fra eksisterende data
+  const avdFilter = document.getElementById('kostnad-avd-filter');
+  if (avdFilter.options.length <= 1 && alleAvdelinger.length) {
+    alleAvdelinger.forEach(a => {
+      const o = document.createElement('option');
+      o.value = a.avdeling;
+      o.textContent = a.avdeling;
+      avdFilter.appendChild(o);
+    });
+  }
+  lastKostnadskontrollData();
+}
+
+async function lastKostnadskontrollData() {
+  const tbody = document.getElementById('kostnad-tbody');
+  tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr>';
+  document.getElementById('kostnad-kpi-rad').innerHTML = '';
+
+  const params = {};
+  if (valgtKostnadAvd) params.p_avdeling = valgtKostnadAvd;
+
+  const { data, error } = await sb.rpc('fn_kostnadskontroll', params);
+  if (error || !data) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--red)">Feil ved lasting: ' + (error?.message || 'ukjent feil') + '</td></tr>';
+    return;
+  }
+  kostnadData = data;
+  renderKostnadskontrollTabell(data);
+}
+
+function renderKostnadskontrollTabell(data) {
+  // KPI-kort
+  const antall      = data.length;
+  const antallNeg   = data.filter(r => Number(r.differanse) < 0).length;
+  const sumDiff     = data.reduce((s, r) => s + Number(r.differanse), 0);
+  document.getElementById('kostnad-kpi-rad').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-label">Antall ordre</div>
+      <div class="kpi-value">${antall}</div>
+      <div class="kpi-sub">category = Ordre</div>
+    </div>
+    <div class="kpi" style="border-left-color:var(--red)">
+      <div class="kpi-label">Ordre med underskudd</div>
+      <div class="kpi-value" style="color:var(--red)">${antallNeg}</div>
+      <div class="kpi-sub">kostnader > ordreverdi</div>
+    </div>
+    <div class="kpi" style="border-left-color:${sumDiff < 0 ? 'var(--red)' : 'var(--green)'}">
+      <div class="kpi-label">Sum differanse</div>
+      <div class="kpi-value" style="color:${sumDiff < 0 ? 'var(--red)' : 'var(--green)'}">${fmt(sumDiff)}</div>
+      <div class="kpi-sub">ordreverdi − totale kostnader</div>
+    </div>`;
+
+  // Tabell
+  const tbody = document.getElementById('kostnad-tbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--muted)">Ingen ordre funnet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(r => {
+    const diff      = Number(r.differanse);
+    const ordrev    = Number(r.ordreverdi);
+    const diffKls   = diff < 0 ? 'kostnad-neg' : (ordrev > 0 && diff / ordrev < 0.2 ? 'kostnad-warn' : '');
+    const timer     = Number(r.total_timer);
+    const timerTxt  = timer > 0 ? timer.toLocaleString('no-NO', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' t' : '–';
+    return `<tr>
+      <td style="color:var(--muted);font-size:0.8rem">${r.order_number}</td>
+      <td>${r.customer_name || '–'}</td>
+      <td>${r.department_name || '–'}</td>
+      <td><span class="status-badge">${r.status_name || '–'}</span></td>
+      <td class="num">${fmt(r.ordreverdi)}</td>
+      <td class="num">${timerTxt}</td>
+      <td class="num">${fmt(r.timekostnad)}</td>
+      <td class="num">${fmt(r.inngaaende_kost)}</td>
+      <td class="num" style="font-weight:600">${fmt(r.totale_kostnader)}</td>
+      <td class="num ${diffKls}">${fmt(r.differanse)}</td>
+    </tr>`;
+  }).join('');
+}
+
 // ── Kommentar-modal ───────────────────────────────────────────────────────
 document.getElementById('modal-avbryt').addEventListener('click', lukkKommentarModal);
 document.getElementById('kommentar-modal').addEventListener('click', (e) => {
@@ -2532,11 +2748,12 @@ document.getElementById('cfo-drilldown-tilbake').addEventListener('click', () =>
 });
 
 function visCfoKpiSide() {
-  document.getElementById('rapport-visning').style.display = 'none';
-  document.getElementById('klar-side').style.display       = 'none';
-  document.getElementById('restordre-side').style.display  = 'none';
-  document.getElementById('budsjett-side').style.display   = 'none';
-  document.getElementById('cfo-kpi-side').style.display    = 'block';
+  document.getElementById('rapport-visning').style.display         = 'none';
+  document.getElementById('klar-side').style.display               = 'none';
+  document.getElementById('restordre-side').style.display          = 'none';
+  document.getElementById('budsjett-side').style.display           = 'none';
+  document.getElementById('kostnadskontroll-side').style.display   = 'none';
+  document.getElementById('cfo-kpi-side').style.display            = 'block';
   byttCfoTab('oversikt');
   byggAarsVelger();
   lastCfoOversikt();
