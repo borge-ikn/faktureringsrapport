@@ -864,6 +864,81 @@
       color: #fff;
     }
     .kostnadskontroll-knapp:hover { background: rgba(255,255,255,0.2); }
+    /* ── Leveringsdato-side ── */
+    .levdat-knapp {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.83rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .levdat-knapp:hover { background: rgba(255,255,255,0.2); }
+
+    .levdat-topplinje {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .levdat-tittel { font-size: 1rem; font-weight: 700; }
+    .levdat-filter-gruppe {
+      display: flex; gap: 0.5rem; align-items: center;
+      margin-left: auto;
+    }
+    .levdat-filter-gruppe label { font-size: 0.83rem; color: var(--muted); }
+    .levdat-filter-gruppe select {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.83rem;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .levdat-kpi-rad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 700px) { .levdat-kpi-rad { grid-template-columns: 1fr; } }
+    .levdat-tabell {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      font-size: 0.85rem;
+    }
+    .levdat-tabell th {
+      background: var(--surface2);
+      padding: 0.65rem 0.8rem;
+      text-align: left;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .levdat-tabell td {
+      padding: 0.6rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .levdat-tabell tr:last-child td { border-bottom: none; }
+    .levdat-dato-groen { color: var(--green);  font-weight: 600; }
+    .levdat-dato-gul   { color: var(--yellow); font-weight: 600; }
+    .levdat-dato-roed  { color: var(--red);    font-weight: 600; }
 
     /* ── Kostnadskontroll-side ── */
     .kostnad-topplinje {
@@ -1090,6 +1165,7 @@
       <button class="restordre-knapp" id="restordre-knapp">📊 Restordre</button>
       <button class="admin-knapp" id="admin-knapp">⚙ Budsjett</button>
       <button class="kostnadskontroll-knapp" id="kostnadskontroll-knapp">🔍 Kostnadskontroll</button>
+      <button class="levdat-knapp" id="levdat-knapp">📅 Leveringsdato</button>
       <div class="bruker-info">
         <span id="bruker-navn">–</span>
         <button class="logg-ut" id="logg-ut-knapp">Logg ut</button>
@@ -1269,6 +1345,34 @@
     </div>
   </div>
 
+  <!-- Leveringsdato-side -->
+  <div id="levdat-side" style="display:none; padding:24px; max-width:1400px; margin:0 auto;">
+    <div class="levdat-topplinje">
+      <button class="tilbake-knapp" id="levdat-tilbake-knapp">← Tilbake til rapport</button>
+      <span class="levdat-tittel">Leveringsdato – Kommende ordre</span>
+      <div class="levdat-filter-gruppe">
+        <label>Avdeling:</label>
+        <select id="levdat-avd-filter"><option value="">Alle avdelinger</option></select>
+        <label>Gruppe:</label>
+        <select id="levdat-gruppe-filter"><option value="">Alle grupper</option></select>
+      </div>
+    </div>
+    <div class="levdat-kpi-rad" id="levdat-kpi-rad"></div>
+    <table class="levdat-tabell">
+      <thead>
+        <tr>
+          <th>Ordrenr.</th>
+          <th>Kunde</th>
+          <th>Avdeling</th>
+          <th>Leveringsdato</th>
+          <th>Gruppe</th>
+          <th>Status</th>
+          <th>Intern notat</th>
+        </tr>
+      </thead>
+      <tbody id="levdat-tbody"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr></tbody>
+    </table>
+  </div>
   <!-- Kommentar-modal -->
   <div class="modal-overlay" id="kommentar-modal" style="display:none">
     <div class="modal-boks">
@@ -1351,6 +1455,7 @@ sb.auth.onAuthStateChange((_event, session) => {
     document.getElementById('klar-knapp').style.display              = 'inline-flex';
     document.getElementById('restordre-knapp').style.display         = 'inline-flex';
     document.getElementById('kostnadskontroll-knapp').style.display  = 'inline-flex';
+    document.getElementById('levdat-knapp').style.display           = 'inline-flex';
     if (isAdmin(session.user.email)) {
       document.getElementById('admin-knapp').style.display   = 'inline-flex';
     }
@@ -1572,6 +1677,7 @@ function visBudsjettSide() {
   document.getElementById('klar-side').style.display               = 'none';
   document.getElementById('restordre-side').style.display          = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
+  document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('budsjett-side').style.display           = 'block';
   document.getElementById('budsjett-mnd-label').textContent = maanedLabel(valgtMaaned);
   renderBudsjettTabell();
@@ -1793,6 +1899,7 @@ function visKlarSide() {
   document.getElementById('budsjett-side').style.display           = 'none';
   document.getElementById('restordre-side').style.display          = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
+  document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('klar-side').style.display               = 'block';
   document.getElementById('admin-knapp').style.display             = 'none';
 
@@ -2019,6 +2126,7 @@ function visRestordreSide() {
   document.getElementById('budsjett-side').style.display           = 'none';
   document.getElementById('klar-side').style.display               = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
+  document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('restordre-side').style.display          = 'block';
   document.getElementById('admin-knapp').style.display             = 'none';
   document.getElementById('restordre-mnd-label').textContent = maanedLabel(valgtMaaned);
@@ -2203,6 +2311,7 @@ function visKostnadskontrollSide() {
   document.getElementById('budsjett-side').style.display           = 'none';
   document.getElementById('klar-side').style.display               = 'none';
   document.getElementById('restordre-side').style.display          = 'none';
+  document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'block';
   document.getElementById('admin-knapp').style.display             = 'none';
 
@@ -2348,6 +2457,131 @@ async function lagreKommentar() {
 }
 
 
+
+// ── Leveringsdato ─────────────────────────────────────────────────────────
+
+let levdatData = [], valgtLevdatAvd = '', valgtLevdatGruppe = '';
+
+document.getElementById('levdat-knapp').addEventListener('click', visLevdatSide);
+document.getElementById('levdat-tilbake-knapp').addEventListener('click', () => {
+  document.getElementById('levdat-side').style.display     = 'none';
+  document.getElementById('rapport-visning').style.display = 'block';
+  if (isAdmin(gjeldendeBruker)) document.getElementById('admin-knapp').style.display = 'inline-flex';
+});
+document.getElementById('levdat-avd-filter').addEventListener('change', function() {
+  valgtLevdatAvd = this.value; lastLevdatData();
+});
+document.getElementById('levdat-gruppe-filter').addEventListener('change', function() {
+  valgtLevdatGruppe = this.value; lastLevdatData();
+});
+
+function visLevdatSide() {
+  document.getElementById('rapport-visning').style.display         = 'none';
+  document.getElementById('budsjett-side').style.display           = 'none';
+  document.getElementById('klar-side').style.display               = 'none';
+  document.getElementById('restordre-side').style.display          = 'none';
+  document.getElementById('kostnadskontroll-side').style.display   = 'none';
+  document.getElementById('levdat-side').style.display             = 'block';
+  document.getElementById('admin-knapp').style.display             = 'none';
+
+  const avdFilter = document.getElementById('levdat-avd-filter');
+  if (avdFilter.options.length <= 1 && alleAvdelinger.length) {
+    alleAvdelinger.forEach(a => {
+      const o = document.createElement('option');
+      o.value = a.avdeling;
+      o.textContent = a.avdeling;
+      avdFilter.appendChild(o);
+    });
+  }
+  lastLevdatData();
+}
+
+async function lastLevdatData() {
+  const tbody = document.getElementById('levdat-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr>';
+  document.getElementById('levdat-kpi-rad').innerHTML = '';
+
+  const params = {};
+  if (valgtLevdatAvd)    params.p_avdeling = valgtLevdatAvd;
+  if (valgtLevdatGruppe) params.p_gruppe   = valgtLevdatGruppe;
+
+  const { data, error } = await sb.rpc('fn_leveringsdato', params);
+  if (error || !data) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--red)">Feil: ' + (error?.message || 'ukjent') + '</td></tr>';
+    return;
+  }
+  levdatData = data;
+
+  // Oppdater gruppe-filter fra faktiske data
+  const gruppeFilter = document.getElementById('levdat-gruppe-filter');
+  const gjeldende = gruppeFilter.value;
+  const grupper = [...new Set(data.map(r => r.order_group).filter(Boolean))].sort();
+  while (gruppeFilter.options.length > 1) gruppeFilter.remove(1);
+  grupper.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g; o.textContent = g;
+    if (g === gjeldende) o.selected = true;
+    gruppeFilter.appendChild(o);
+  });
+
+  renderLevdatTabell(data);
+}
+
+function renderLevdatTabell(data) {
+  const iDag    = new Date(); iDag.setHours(0,0,0,0);
+  const ukeSlut = new Date(iDag); ukeSlut.setDate(iDag.getDate() + (7 - iDag.getDay()));
+  const nesteUkeSlutt = new Date(ukeSlut); nesteUkeSlutt.setDate(ukeSlut.getDate() + 7);
+
+  function datoKlasse(datoStr) {
+    if (!datoStr) return '';
+    const d = new Date(datoStr + 'T00:00:00');
+    if (d < iDag)        return 'levdat-dato-roed';
+    if (d <= ukeSlut)    return 'levdat-dato-groen';
+    if (d <= nesteUkeSlutt) return 'levdat-dato-gul';
+    return '';
+  }
+
+  // KPI-rad
+  const antall     = data.length;
+  const nesteDato  = data.length ? fmtDato(data[0].delivery_date) : '–';
+  const unikeKund  = new Set(data.map(r => r.customer_name).filter(Boolean)).size;
+
+  document.getElementById('levdat-kpi-rad').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-label">Kommende ordre</div>
+      <div class="kpi-value">${antall}</div>
+      <div class="kpi-sub">aktive ordre med levdato</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Neste leveringsdato</div>
+      <div class="kpi-value" style="font-size:1.1rem">${nesteDato}</div>
+      <div class="kpi-sub">tidligst i filteret</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Unike kunder</div>
+      <div class="kpi-value">${unikeKund}</div>
+      <div class="kpi-sub">i gjeldende filter</div>
+    </div>`;
+
+  const tbody = document.getElementById('levdat-tbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">Ingen ordre funnet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(r => {
+    const kls = datoKlasse(r.delivery_date);
+    return `<tr>
+      <td style="color:var(--muted);font-size:0.8rem">${r.order_number}</td>
+      <td>${r.customer_name || '–'}</td>
+      <td>${r.department_name || '–'}</td>
+      <td class="${kls}">${r.delivery_date ? fmtDato(r.delivery_date) : '–'}</td>
+      <td>${r.order_group || '–'}</td>
+      <td><span class="status-badge">${r.status_name || '–'}</span></td>
+      <td style="color:var(--muted);font-size:0.82rem;max-width:260px;white-space:pre-wrap">${r.note || ''}</td>
+    </tr>`;
+  }).join('');
+}
 setInterval(() => location.reload(), 60 * 60 * 1000);
 </script>
 </body>
