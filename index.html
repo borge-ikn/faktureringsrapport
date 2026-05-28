@@ -2596,6 +2596,17 @@ function renderLevdatTabell(data) {
     </tr>`;
   }).join('');
 }
+
+function sorterLevdat(kol) {
+  if (levdatSortKol === kol) {
+    levdatSortDir = -levdatSortDir;
+  } else {
+    levdatSortKol = kol;
+    levdatSortDir = 1;
+  }
+  renderLevdatTabell(levdatData);
+}
+
 setInterval(() => location.reload(), 60 * 60 * 1000);
 </script>
 </body>
