@@ -1361,12 +1361,12 @@
     <table class="levdat-tabell">
       <thead>
         <tr>
-          <th>Ordrenr.</th>
-          <th>Kunde</th>
-          <th>Avdeling</th>
-          <th>Leveringsdato</th>
-          <th>Gruppe</th>
-          <th>Status</th>
+          <th data-kol="order_number" onclick="sorterLevdat('order_number')" style="cursor:pointer;user-select:none">Ordrenr. <span class="sort-ind"></span></th>
+          <th data-kol="customer_name" onclick="sorterLevdat('customer_name')" style="cursor:pointer;user-select:none">Kunde <span class="sort-ind"></span></th>
+          <th data-kol="department_name" onclick="sorterLevdat('department_name')" style="cursor:pointer;user-select:none">Avdeling <span class="sort-ind"></span></th>
+          <th data-kol="delivery_date" onclick="sorterLevdat('delivery_date')" style="cursor:pointer;user-select:none">Leveringsdato <span class="sort-ind"></span></th>
+          <th data-kol="order_group" onclick="sorterLevdat('order_group')" style="cursor:pointer;user-select:none">Gruppe <span class="sort-ind"></span></th>
+          <th data-kol="status_name" onclick="sorterLevdat('status_name')" style="cursor:pointer;user-select:none">Status <span class="sort-ind"></span></th>
           <th>Intern notat</th>
         </tr>
       </thead>
@@ -2461,6 +2461,7 @@ async function lagreKommentar() {
 // ── Leveringsdato ─────────────────────────────────────────────────────────
 
 let levdatData = [], valgtLevdatAvd = '', valgtLevdatGruppe = '';
+let levdatSortKol = 'delivery_date', levdatSortDir = 1;
 
 document.getElementById('levdat-knapp').addEventListener('click', visLevdatSide);
 document.getElementById('levdat-tilbake-knapp').addEventListener('click', () => {
@@ -2528,6 +2529,19 @@ async function lastLevdatData() {
 }
 
 function renderLevdatTabell(data) {
+  // Sorter data
+  const sorted = [...data].sort((a, b) => {
+    const va = a[levdatSortKol] ?? '';
+    const vb = b[levdatSortKol] ?? '';
+    if (va < vb) return -levdatSortDir;
+    if (va > vb) return levdatSortDir;
+    return 0;
+  });
+  // Oppdater header-indikatorer
+  document.querySelectorAll('.levdat-tabell th[data-kol]').forEach(th => {
+    const ind = th.querySelector('.sort-ind');
+    if (ind) ind.textContent = th.dataset.kol === levdatSortKol ? (levdatSortDir === 1 ? ' ▲' : ' ▼') : '';
+  });
   const iDag    = new Date(); iDag.setHours(0,0,0,0);
   const ukeSlut = new Date(iDag); ukeSlut.setDate(iDag.getDate() + (7 - iDag.getDay()));
   const nesteUkeSlutt = new Date(ukeSlut); nesteUkeSlutt.setDate(ukeSlut.getDate() + 7);
@@ -2569,7 +2583,7 @@ function renderLevdatTabell(data) {
     return;
   }
 
-  tbody.innerHTML = data.map(r => {
+  tbody.innerHTML = sorted.map(r => {
     const kls = datoKlasse(r.delivery_date);
     return `<tr>
       <td style="color:var(--muted);font-size:0.8rem">${r.order_number}</td>
