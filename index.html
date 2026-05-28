@@ -1278,7 +1278,8 @@
         <tr>
           <th>Avdeling</th>
           <th>Ordreverdi</th>
-          <th>Fakturert</th>
+          <th>Fakturert hittil</th>
+          <th>Fakturert periode</th>
           <th>Restordre</th>
           <th>Grad</th>
         </tr>
@@ -2173,16 +2174,16 @@ async function renderTimerTabell() {
 
 async function renderRestordreTabell() {
   const tbody = document.getElementById('restordre-tbody');
-  tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner">Laster…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" class="detalj-spinner">Laster…</td></tr>';
 
   const { data, error } = await sb.rpc('fn_restordre_grad', { p_maaned: valgtMaaned });
   if (error || !data) {
-    tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner" style="color:var(--red)">Feil ved lasting.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="detalj-spinner" style="color:var(--red)">Feil ved lasting.</td></tr>';
     return;
   }
 
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner">Ingen data funnet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="detalj-spinner">Ingen data funnet.</td></tr>';
     return;
   }
 
@@ -2196,7 +2197,7 @@ async function renderRestordreTabell() {
     const kommentar = r.kommentar || alleKommentarer[r.avdeling] || null;
     const kommentarRad = `
       <tr class="detalj-rad" id="krad-${r.avdeling}">
-        <td colspan="5" class="restordre-kommentar-celle">
+        <td colspan="6" class="restordre-kommentar-celle">
           ${kommentar
             ? `💬 ${kommentar}${erBrukerAdmin ? ` <button class="rediger-kommentar-knapp" onclick="åpneKommentarModal('${r.avdeling.replace(/'/g,"\\'")}', event)">Rediger</button>` : ''}`
             : (erBrukerAdmin
@@ -2209,13 +2210,14 @@ async function renderRestordreTabell() {
       <tr class="avd-rad" id="rad-${r.avdeling}" onclick="toggleDetaljer('${r.avdeling.replace(/'/g,"\\'")}')">
         <td><i class="chevron">▶</i>${r.avdeling}</td>
         <td>${fmt(r.ordre_verdi)}</td>
-        <td>${fmt(r.fakturert)}</td>
+        <td>${fmt(r.fakturert_hittil)}</td>
+        <td>${fmt(r.fakturert_periode)}</td>
         <td>${fmt(r.restordre)}</td>
         <td>${chip}</td>
       </tr>
       ${kommentarRad}
       <tr class="detalj-rad" id="detalj-${r.avdeling}" style="display:none">
-        <td colspan="5" style="padding:0">
+        <td colspan="6" style="padding:0">
           <div id="detalj-innhold-${r.avdeling}"></div>
         </td>
       </tr>`;
