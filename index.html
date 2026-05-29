@@ -1548,10 +1548,11 @@ async function lastData(maaned) {
 
   document.getElementById('avd-container').innerHTML = '<div class="spinner">Laster...</div>';
 
-  const [avdRes, sjekpktRes, komRes] = await Promise.all([
+  const [avdRes, sjekpktRes, komRes, statusRes] = await Promise.all([
     sb.rpc('fn_dashboard_avdeling',     { p_maaned: maaned }),
     sb.rpc('fn_dashboard_sjekkpunkter', { p_maaned: maaned }),
-    sb.from('department_comments').select('department_name, kommentar')
+    sb.from('department_comments').select('department_name, kommentar'),
+    sb.rpc('fn_datakilde_status')
   ]);
 
   alleAvdelinger   = avdRes.data     || [];
@@ -1560,6 +1561,21 @@ async function lastData(maaned) {
   (komRes.data || []).forEach(k => {
     if (k.kommentar) alleKommentarer[k.department_name] = k.kommentar;
   });
+
+  // Vis sist-oppdatert-tidspunkt i header
+  const statusData = statusRes.data || [];
+  const tidEl = document.getElementById('oppdatert-tid');
+  if (statusData.length) {
+    const fmtTid = d => d.toLocaleString('nb-NO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const tidspunkter = statusData.map(r => new Date(r.sist_oppdatert));
+    const eldste = new Date(Math.min(...tidspunkter));
+    const tooltip = statusData.map(r => `${r.kilde}: ${fmtTid(new Date(r.sist_oppdatert))}`).join('\n');
+    tidEl.textContent = `Oppdatert ${fmtTid(eldste)}`;
+    tidEl.title = tooltip;
+  } else {
+    tidEl.textContent = '–';
+    tidEl.title = '';
+  }
 
   const avdVelger = document.getElementById('avd-velger');
   const gjeldende = avdVelger.value;
