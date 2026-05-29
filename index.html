@@ -1573,6 +1573,13 @@ async function lastData(maaned) {
   if (gjeldende) avdVelger.value = gjeldende;
 
   oppdaterVisning();
+
+  // Oppdater restordre-siden hvis den er synlig
+  if (document.getElementById('restordre-side').style.display !== 'none') {
+    document.getElementById('restordre-mnd-label').textContent = maanedLabel(valgtMaaned);
+    renderRestordreTabell();
+    renderTimerTabell();
+  }
 }
 
 async function oppdaterVisning() {
