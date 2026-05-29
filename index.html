@@ -1404,7 +1404,7 @@
   <div id="avvik-side" style="display:none; padding:24px; max-width:1400px; margin:0 auto;">
     <div class="kostnad-topplinje">
       <button class="tilbake-knapp" id="avvik-tilbake-knapp">← Tilbake til rapport</button>
-      <span class="kostnad-tittel">⚠️ Avvik avdeling – Innkommende fakturaer</span>
+      <span class="kostnad-tittel">⚠️ Avvik avdeling – Kostnadsbilag</span>
     </div>
     <div id="avvik-kpi-rad" style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;"></div>
     <table class="kostnad-tabell">
@@ -1415,12 +1415,13 @@
           <th>Prodsys-avdeling</th>
           <th>PO-avdeling</th>
           <th class="num">Beløp</th>
-          <th>Bilagsdato</th>
-          <th>Fakturanr.</th>
-          <th>Leverandørnr.</th>
+          <th>Dato</th>
+          <th>Type</th>
+          <th>Konto</th>
+          <th>Beskrivelse</th>
         </tr>
       </thead>
-      <tbody id="avvik-tbody"><tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr></tbody>
+      <tbody id="avvik-tbody"><tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr></tbody>
     </table>
   </div>
 
@@ -2747,11 +2748,11 @@ function visAvvikSide() {
 
 async function lastAvvikData() {
   const tbody = document.getElementById('avvik-tbody');
-  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr>';
   document.getElementById('avvik-kpi-rad').innerHTML = '';
   const { data, error } = await sb.rpc('fn_avvik_avdeling');
   if (error || !data) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">Feil: ' + (error?.message || 'ukjent') + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--red)">Feil: ' + (error?.message || 'ukjent') + '</td></tr>';
     return;
   }
   avvikData = data;
@@ -2759,35 +2760,53 @@ async function lastAvvikData() {
 }
 
 function renderAvvikTabell(data) {
+  const typeNavn = {
+    'IncomingInvoice':    'Innk. faktura',
+    'IncomingCreditNote': 'Kreditnota',
+    'ManualJournal':      'Manuell post',
+    'Expense':            'Utgift',
+    'TravelExpense':      'Reiseregning'
+  };
+
   const kpiEl = document.getElementById('avvik-kpi-rad');
-  const totBeloep = data.reduce((s, r) => s + Number(r.net_amount || 0), 0);
+  const totBeloep = data.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const unikeOrdre = new Set(data.map(r => r.order_number)).size;
   kpiEl.innerHTML = `
     <div class="kpi">
-      <div class="kpi-label">Antall avvik</div>
+      <div class="kpi-label">Antall bilag</div>
       <div class="kpi-value">${data.length}</div>
-      <div class="kpi-sub">fakturaer feilkodet avdeling</div>
+      <div class="kpi-sub">feilkodet avdeling</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Unike ordrer</div>
+      <div class="kpi-value">${unikeOrdre}</div>
+      <div class="kpi-sub">ordre med avvik</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Totalt beløp</div>
       <div class="kpi-value">${fmt(totBeloep)}</div>
-      <div class="kpi-sub">sum innkommende fakturaer</div>
+      <div class="kpi-sub">sum alle bilag</div>
     </div>`;
 
   const tbody = document.getElementById('avvik-tbody');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Ingen avvik funnet for denne måneden.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted)">Ingen avvik funnet.</td></tr>';
     return;
   }
-  tbody.innerHTML = data.map(r => `<tr>
-    <td style="color:var(--muted);font-size:0.8rem">${r.order_number}</td>
-    <td>${r.customer_name || '–'}</td>
-    <td><span style="color:var(--green);font-weight:600">${r.prodsys_avdeling || '–'}</span></td>
-    <td><span style="color:var(--red);font-weight:600">${r.po_avdeling || '–'}</span></td>
-    <td class="num">${fmt(r.net_amount)}</td>
-    <td style="color:var(--muted)">${r.voucher_date ? fmtDato(r.voucher_date) : '–'}</td>
-    <td style="color:var(--muted);font-size:0.82rem">${r.invoice_no || '–'}</td>
-    <td style="color:var(--muted);font-size:0.82rem">${r.supplier_no || '–'}</td>
-  </tr>`).join('');
+  tbody.innerHTML = data.map(r => {
+    const type = typeNavn[r.voucher_type] || r.voucher_type;
+    return `<tr>
+      <td style="color:var(--muted);font-size:0.8rem">${r.order_number}</td>
+      <td>${r.customer_name || '–'}</td>
+      <td><span style="color:var(--green);font-weight:600">${r.prodsys_avdeling || '–'}</span></td>
+      <td><span style="color:var(--red);font-weight:600">${r.po_avdeling || '–'}</span></td>
+      <td class="num">${fmt(r.amount)}</td>
+      <td style="color:var(--muted)">${r.voucher_date ? fmtDato(r.voucher_date) : '–'}</td>
+      <td><span class="status-badge">${type}</span></td>
+      <td style="color:var(--muted);font-size:0.82rem">${r.account_no || '–'}</td>
+      <td style="color:var(--muted);font-size:0.82rem;max-width:220px;white-space:pre-wrap">${r.description || ''}</td>
+    </tr>`;
+  }).join('');
 }
 
 setInterval(() => location.reload(), 60 * 60 * 1000);
