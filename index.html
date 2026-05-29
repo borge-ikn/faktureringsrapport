@@ -900,6 +900,11 @@
     }
     .avvik-knapp:hover { background: rgba(255,255,255,0.2); }
 
+    .nav-aktiv {
+      background: rgba(255,255,255,0.22) !important;
+      border-bottom: 3px solid var(--gold) !important;
+    }
+
     .levdat-topplinje {
       display: flex;
       align-items: center;
@@ -1456,6 +1461,28 @@
 const ADMIN_EMAILS = ['kno@industrikran.no', 'eli@industrikran.no', 'bkv@industrikran.no'];
 function isAdmin(email) { return ADMIN_EMAILS.includes((email || '').toLowerCase()); }
 
+const NAV_KNAPPER = ['klar-knapp','restordre-knapp','admin-knapp',
+                     'kostnadskontroll-knapp','levdat-knapp','avvik-knapp'];
+
+function setAktivNav(id) {
+  NAV_KNAPPER.forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.classList.remove('nav-aktiv');
+  });
+  if (id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('nav-aktiv');
+  }
+}
+
+function setHeaderFiltre(synlig) {
+  const v = synlig ? '' : 'none';
+  ['maaned-velger','avd-velger','oppdatert-tid'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = v;
+  });
+}
+
 const SUPABASE_URL      = 'https://eeikodpeeybrzgxcsflh.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlaWtvZHBlZXlicnpneGNzZmxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMzY3MjcsImV4cCI6MjA5MzYxMjcyN30.nJFkmdOvpHrq2MGaDIyF0GShPBUOnOB9h-cf9-elsTY';
 
@@ -1739,8 +1766,7 @@ document.getElementById('tilbake-knapp').addEventListener('click', () => {
   document.getElementById('restordre-side').style.display         = 'none';
   document.getElementById('kostnadskontroll-side').style.display  = 'none';
   document.getElementById('rapport-visning').style.display        = 'block';
-  document.getElementById('admin-knapp').style.display            = 'inline-flex';
-  document.getElementById('avvik-knapp').style.display            = 'inline-flex';
+  setAktivNav(null); setHeaderFiltre(true);
 });
 document.getElementById('kopier-forrige-knapp').addEventListener('click', kopierForrigeMaaned);
 
@@ -1752,6 +1778,7 @@ function visBudsjettSide() {
   document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('budsjett-side').style.display           = 'block';
+  setAktivNav('admin-knapp'); setHeaderFiltre(false);
   document.getElementById('budsjett-mnd-label').textContent = maanedLabel(valgtMaaned);
   renderBudsjettTabell();
 }
@@ -1936,10 +1963,7 @@ document.getElementById('klar-knapp').addEventListener('click', visKlarSide);
 document.getElementById('klar-tilbake-knapp').addEventListener('click', () => {
   document.getElementById('klar-side').style.display       = 'none';
   document.getElementById('rapport-visning').style.display = 'block';
-  if (isAdmin(gjeldendeBruker)) {
-    document.getElementById('admin-knapp').style.display   = 'inline-flex';
-    document.getElementById('avvik-knapp').style.display   = 'inline-flex';
-  }
+  setAktivNav(null); setHeaderFiltre(true);
 });
 document.getElementById('klar-filter-maaned').addEventListener('change', lastKlarData);
 document.getElementById('klar-filter-avd').addEventListener('change', lastKlarData);
@@ -1978,7 +2002,7 @@ function visKlarSide() {
   document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('klar-side').style.display               = 'block';
-  document.getElementById('admin-knapp').style.display             = 'none';
+  setAktivNav('klar-knapp'); setHeaderFiltre(false);
 
   // Fyll måned-filter med tilgjengelige måneder
   const mndVelger = document.getElementById('klar-filter-maaned');
@@ -2195,10 +2219,7 @@ document.getElementById('restordre-knapp').addEventListener('click', visRestordr
 document.getElementById('restordre-tilbake-knapp').addEventListener('click', () => {
   document.getElementById('restordre-side').style.display    = 'none';
   document.getElementById('rapport-visning').style.display   = 'block';
-  if (isAdmin(gjeldendeBruker)) {
-    document.getElementById('admin-knapp').style.display     = 'inline-flex';
-    document.getElementById('avvik-knapp').style.display     = 'inline-flex';
-  }
+  setAktivNav(null); setHeaderFiltre(true);
 });
 
 function visRestordreSide() {
@@ -2209,7 +2230,7 @@ function visRestordreSide() {
   document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('restordre-side').style.display          = 'block';
-  document.getElementById('admin-knapp').style.display             = 'none';
+  setAktivNav('restordre-knapp'); setHeaderFiltre(false);
   document.getElementById('restordre-mnd-label').textContent = maanedLabel(valgtMaaned);
   renderRestordreTabell();
   renderTimerTabell();
@@ -2385,10 +2406,7 @@ document.getElementById('kostnadskontroll-knapp').addEventListener('click', visK
 document.getElementById('kostnadskontroll-tilbake-knapp').addEventListener('click', () => {
   document.getElementById('kostnadskontroll-side').style.display = 'none';
   document.getElementById('rapport-visning').style.display       = 'block';
-  if (isAdmin(gjeldendeBruker)) {
-    document.getElementById('admin-knapp').style.display         = 'inline-flex';
-    document.getElementById('avvik-knapp').style.display         = 'inline-flex';
-  }
+  setAktivNav(null); setHeaderFiltre(true);
 });
 document.getElementById('kostnad-avd-filter').addEventListener('change', function() {
   valgtKostnadAvd = this.value;
@@ -2407,7 +2425,7 @@ function visKostnadskontrollSide() {
   document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'block';
-  document.getElementById('admin-knapp').style.display             = 'none';
+  setAktivNav('kostnadskontroll-knapp'); setHeaderFiltre(false);
 
   // Fyll avdelings-filter fra eksisterende data
   const avdFilter = document.getElementById('kostnad-avd-filter');
@@ -2561,10 +2579,7 @@ document.getElementById('levdat-knapp').addEventListener('click', visLevdatSide)
 document.getElementById('levdat-tilbake-knapp').addEventListener('click', () => {
   document.getElementById('levdat-side').style.display     = 'none';
   document.getElementById('rapport-visning').style.display = 'block';
-  if (isAdmin(gjeldendeBruker)) {
-    document.getElementById('admin-knapp').style.display  = 'inline-flex';
-    document.getElementById('avvik-knapp').style.display  = 'inline-flex';
-  }
+  setAktivNav(null); setHeaderFiltre(true);
 });
 document.getElementById('levdat-avd-filter').addEventListener('change', function() {
   valgtLevdatAvd = this.value; lastLevdatData();
@@ -2581,8 +2596,7 @@ function visLevdatSide() {
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
   document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('levdat-side').style.display             = 'block';
-  document.getElementById('admin-knapp').style.display             = 'none';
-  document.getElementById('avvik-knapp').style.display             = 'none';
+  setAktivNav('levdat-knapp'); setHeaderFiltre(false);
 
   const avdFilter = document.getElementById('levdat-avd-filter');
   if (avdFilter.options.length <= 1 && alleAvdelinger.length) {
@@ -2716,8 +2730,7 @@ document.getElementById('avvik-knapp').addEventListener('click', visAvvikSide);
 document.getElementById('avvik-tilbake-knapp').addEventListener('click', () => {
   document.getElementById('avvik-side').style.display      = 'none';
   document.getElementById('rapport-visning').style.display = 'block';
-  document.getElementById('admin-knapp').style.display     = 'inline-flex';
-  document.getElementById('avvik-knapp').style.display     = 'inline-flex';
+  setAktivNav(null); setHeaderFiltre(true);
 });
 
 function visAvvikSide() {
@@ -2728,8 +2741,7 @@ function visAvvikSide() {
   document.getElementById('kostnadskontroll-side').style.display  = 'none';
   document.getElementById('levdat-side').style.display            = 'none';
   document.getElementById('avvik-side').style.display             = 'block';
-  document.getElementById('admin-knapp').style.display            = 'none';
-  document.getElementById('avvik-knapp').style.display            = 'none';
+  setAktivNav('avvik-knapp'); setHeaderFiltre(false);
   lastAvvikData();
 }
 
