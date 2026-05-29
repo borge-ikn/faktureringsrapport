@@ -1405,6 +1405,14 @@
     <div class="kostnad-topplinje">
       <button class="tilbake-knapp" id="avvik-tilbake-knapp">← Tilbake til rapport</button>
       <span class="kostnad-tittel">⚠️ Avvik avdeling – Kostnadsbilag</span>
+      <div class="kostnad-filter-gruppe">
+        <label style="font-size:0.83rem; color:var(--muted)">Avdeling:</label>
+        <select id="avvik-avd-filter"><option value="">Alle avdelinger</option></select>
+        <label style="font-size:0.83rem; color:var(--muted)">Fra:</label>
+        <input type="date" id="avvik-fra-dato" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.6rem;font-size:0.83rem;color:var(--text)">
+        <label style="font-size:0.83rem; color:var(--muted)">Til:</label>
+        <input type="date" id="avvik-til-dato" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.6rem;font-size:0.83rem;color:var(--text)">
+      </div>
     </div>
     <div id="avvik-kpi-rad" style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;"></div>
     <table class="kostnad-tabell">
@@ -2725,9 +2733,18 @@ function sorterLevdat(kol) {
 
 // ── Avvik avdeling (admin) ─────────────────────────────────────────────────
 
-let avvikData = [];
+let avvikData = [], valgtAvvikAvd = '', valgtAvvikFra = '', valgtAvvikTil = '';
 
 document.getElementById('avvik-knapp').addEventListener('click', visAvvikSide);
+document.getElementById('avvik-avd-filter').addEventListener('change', function() {
+  valgtAvvikAvd = this.value; lastAvvikData();
+});
+document.getElementById('avvik-fra-dato').addEventListener('change', function() {
+  valgtAvvikFra = this.value; lastAvvikData();
+});
+document.getElementById('avvik-til-dato').addEventListener('change', function() {
+  valgtAvvikTil = this.value; lastAvvikData();
+});
 document.getElementById('avvik-tilbake-knapp').addEventListener('click', () => {
   document.getElementById('avvik-side').style.display      = 'none';
   document.getElementById('rapport-visning').style.display = 'block';
@@ -2743,6 +2760,16 @@ function visAvvikSide() {
   document.getElementById('levdat-side').style.display            = 'none';
   document.getElementById('avvik-side').style.display             = 'block';
   setAktivNav('avvik-knapp'); setHeaderFiltre(false);
+
+  // Fyll avdelingsfilter fra eksisterende data
+  const avdFilter = document.getElementById('avvik-avd-filter');
+  if (avdFilter.options.length <= 1 && alleAvdelinger.length) {
+    alleAvdelinger.forEach(a => {
+      const o = document.createElement('option');
+      o.value = a.avdeling; o.textContent = a.avdeling;
+      avdFilter.appendChild(o);
+    });
+  }
   lastAvvikData();
 }
 
@@ -2750,7 +2777,11 @@ async function lastAvvikData() {
   const tbody = document.getElementById('avvik-tbody');
   tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr>';
   document.getElementById('avvik-kpi-rad').innerHTML = '';
-  const { data, error } = await sb.rpc('fn_avvik_avdeling');
+  const params = {};
+  if (valgtAvvikAvd)  params.p_avdeling = valgtAvvikAvd;
+  if (valgtAvvikFra)  params.p_fra_dato = valgtAvvikFra;
+  if (valgtAvvikTil)  params.p_til_dato = valgtAvvikTil;
+  const { data, error } = await sb.rpc('fn_avvik_avdeling', params);
   if (error || !data) {
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--red)">Feil: ' + (error?.message || 'ukjent') + '</td></tr>';
     return;
