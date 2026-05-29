@@ -2237,8 +2237,11 @@ async function renderRestordreTabell() {
       <tr class="avd-rad" id="rad-${r.avdeling}" onclick="toggleDetaljer('${r.avdeling.replace(/'/g,"\\'")}')">
         <td><i class="chevron">▶</i>${r.avdeling}</td>
         <td class="bar-kol">
-          <div class="restordre-bar">
-            <div class="restordre-bar-fill" style="width:${Math.min(grad??0,100)}%;background:${gradFarge2}"></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="restordre-bar" style="flex:1">
+              <div class="restordre-bar-fill" style="width:${Math.min(grad,100)}%;background:${gradFarge2}"></div>
+            </div>
+            <span style="font-size:1.1rem;line-height:1">${grad>=95?'🏆':grad>=75?'🏃':grad>=50?'🚶':grad>=25?'🐢':'😴'}</span>
           </div>
         </td>
         <td>${fmt(r.fakturert)}</td>
