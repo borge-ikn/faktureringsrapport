@@ -1400,7 +1400,6 @@
     <div class="kostnad-topplinje">
       <button class="tilbake-knapp" id="avvik-tilbake-knapp">← Tilbake til rapport</button>
       <span class="kostnad-tittel">⚠️ Avvik avdeling – Innkommende fakturaer</span>
-      <span style="font-size:0.83rem; color:var(--muted)" id="avvik-mnd-label"></span>
     </div>
     <div id="avvik-kpi-rad" style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;"></div>
     <table class="kostnad-tabell">
@@ -2722,7 +2721,6 @@ function visAvvikSide() {
   document.getElementById('avvik-side').style.display             = 'block';
   document.getElementById('admin-knapp').style.display            = 'none';
   document.getElementById('avvik-knapp').style.display            = 'none';
-  document.getElementById('avvik-mnd-label').textContent          = maanedLabel(valgtMaaned);
   lastAvvikData();
 }
 
@@ -2730,7 +2728,7 @@ async function lastAvvikData() {
   const tbody = document.getElementById('avvik-tbody');
   tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr>';
   document.getElementById('avvik-kpi-rad').innerHTML = '';
-  const { data, error } = await sb.rpc('fn_avvik_avdeling', { p_maaned: valgtMaaned });
+  const { data, error } = await sb.rpc('fn_avvik_avdeling');
   if (error || !data) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">Feil: ' + (error?.message || 'ukjent') + '</td></tr>';
     return;
