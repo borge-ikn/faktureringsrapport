@@ -727,6 +727,10 @@
     }
     .restordre-tabell td:first-child { text-align: left; }
     .restordre-tabell tr:last-child td { border-bottom: none; }
+    .restordre-tabell th.bar-kol,
+    .restordre-tabell td.bar-kol { width: 38%; padding: 0.65rem 1.2rem; text-align: left; }
+    .restordre-bar { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+    .restordre-bar-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; }
 
     .avd-rad { cursor: pointer; }
     .avd-rad:hover td { background: var(--surface2); }
@@ -1277,6 +1281,7 @@
       <thead>
         <tr>
           <th>Avdeling</th>
+          <th class="bar-kol"></th>
           <th>Fakturert</th>
           <th>Restbeløp</th>
           <th>Grad</th>
@@ -1296,7 +1301,7 @@
             <th>Andel fakturerbar</th>
           </tr>
         </thead>
-        <tbody id="timer-tbody"><tr><td colspan="4" class="detalj-spinner">Laster…</td></tr></tbody>
+        <tbody id="timer-tbody"><tr><td colspan="5" class="detalj-spinner">Laster…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -2159,11 +2164,11 @@ function visRestordreSide() {
 
 async function renderTimerTabell() {
   const tbody = document.getElementById('timer-tbody');
-  tbody.innerHTML = '<tr><td colspan="4" class="detalj-spinner">Laster…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner">Laster…</td></tr>';
 
   const { data, error } = await sb.rpc('fn_timer_per_avdeling', { p_maaned: valgtMaaned });
   if (error || !data || !data.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="detalj-spinner" style="color:var(--muted)">Ingen timedata for denne måneden.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner" style="color:var(--muted)">Ingen timedata for denne måneden.</td></tr>';
     return;
   }
 
@@ -2195,16 +2200,16 @@ async function renderTimerTabell() {
 
 async function renderRestordreTabell() {
   const tbody = document.getElementById('restordre-tbody');
-  tbody.innerHTML = '<tr><td colspan="4" class="detalj-spinner">Laster…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner">Laster…</td></tr>';
 
   const { data, error } = await sb.rpc('fn_restordre_grad', { p_maaned: valgtMaaned });
   if (error || !data) {
-    tbody.innerHTML = '<tr><td colspan="4" class="detalj-spinner" style="color:var(--red)">Feil ved lasting.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner" style="color:var(--red)">Feil ved lasting.</td></tr>';
     return;
   }
 
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="detalj-spinner">Ingen data funnet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner">Ingen data funnet.</td></tr>';
     return;
   }
 
@@ -2218,7 +2223,7 @@ async function renderRestordreTabell() {
     const kommentar = r.kommentar || alleKommentarer[r.avdeling] || null;
     const kommentarRad = `
       <tr class="detalj-rad" id="krad-${r.avdeling}">
-        <td colspan="4" class="restordre-kommentar-celle">
+        <td colspan="5" class="restordre-kommentar-celle">
           ${kommentar
             ? `💬 ${kommentar}${erBrukerAdmin ? ` <button class="rediger-kommentar-knapp" onclick="åpneKommentarModal('${r.avdeling.replace(/'/g,"\\'")}', event)">Rediger</button>` : ''}`
             : (erBrukerAdmin
@@ -2230,13 +2235,18 @@ async function renderRestordreTabell() {
     return `
       <tr class="avd-rad" id="rad-${r.avdeling}" onclick="toggleDetaljer('${r.avdeling.replace(/'/g,"\\'")}')">
         <td><i class="chevron">▶</i>${r.avdeling}</td>
+        <td class="bar-kol">
+          <div class="restordre-bar">
+            <div class="restordre-bar-fill" style="width:${Math.min(grad??0,100)}%;background:${gradFarge2}"></div>
+          </div>
+        </td>
         <td>${fmt(r.fakturert)}</td>
         <td>${fmt(r.restbeloep)}</td>
         <td>${chip}</td>
       </tr>
       ${kommentarRad}
       <tr class="detalj-rad" id="detalj-${r.avdeling}" style="display:none">
-        <td colspan="4" style="padding:0">
+        <td colspan="5" style="padding:0">
           <div id="detalj-innhold-${r.avdeling}"></div>
         </td>
       </tr>`;
