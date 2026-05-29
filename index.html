@@ -885,6 +885,21 @@
     }
     .levdat-knapp:hover { background: rgba(255,255,255,0.2); }
 
+    .avvik-knapp {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 6px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.83rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: #fff;
+    }
+    .avvik-knapp:hover { background: rgba(255,255,255,0.2); }
+
     .levdat-topplinje {
       display: flex;
       align-items: center;
@@ -1170,6 +1185,7 @@
       <button class="admin-knapp" id="admin-knapp">⚙ Budsjett</button>
       <button class="kostnadskontroll-knapp" id="kostnadskontroll-knapp">🔍 Kostnadskontroll</button>
       <button class="levdat-knapp" id="levdat-knapp">📅 Leveringsdato</button>
+      <button class="avvik-knapp" id="avvik-knapp">⚠️ Avvik avdeling</button>
       <div class="bruker-info">
         <span id="bruker-navn">–</span>
         <button class="logg-ut" id="logg-ut-knapp">Logg ut</button>
@@ -1378,6 +1394,32 @@
       <tbody id="levdat-tbody"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr></tbody>
     </table>
   </div>
+
+  <!-- Avvik-avdeling-side -->
+  <div id="avvik-side" style="display:none; padding:24px; max-width:1400px; margin:0 auto;">
+    <div class="kostnad-topplinje">
+      <button class="tilbake-knapp" id="avvik-tilbake-knapp">← Tilbake til rapport</button>
+      <span class="kostnad-tittel">⚠️ Avvik avdeling – Innkommende fakturaer</span>
+      <span style="font-size:0.83rem; color:var(--muted)" id="avvik-mnd-label"></span>
+    </div>
+    <div id="avvik-kpi-rad" style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;"></div>
+    <table class="kostnad-tabell">
+      <thead>
+        <tr>
+          <th>Ordrenr.</th>
+          <th>Kunde</th>
+          <th>Prodsys-avdeling</th>
+          <th>PO-avdeling</th>
+          <th class="num">Beløp</th>
+          <th>Bilagsdato</th>
+          <th>Fakturanr.</th>
+          <th>Leverandørnr.</th>
+        </tr>
+      </thead>
+      <tbody id="avvik-tbody"><tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr></tbody>
+    </table>
+  </div>
+
   <!-- Kommentar-modal -->
   <div class="modal-overlay" id="kommentar-modal" style="display:none">
     <div class="modal-boks">
@@ -1463,6 +1505,7 @@ sb.auth.onAuthStateChange((_event, session) => {
     document.getElementById('levdat-knapp').style.display           = 'inline-flex';
     if (isAdmin(session.user.email)) {
       document.getElementById('admin-knapp').style.display   = 'inline-flex';
+      document.getElementById('avvik-knapp').style.display   = 'inline-flex';
     }
     initDashboard();
   } else {
@@ -1706,6 +1749,7 @@ function visBudsjettSide() {
   document.getElementById('restordre-side').style.display          = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
   document.getElementById('levdat-side').style.display             = 'none';
+  document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('budsjett-side').style.display           = 'block';
   document.getElementById('budsjett-mnd-label').textContent = maanedLabel(valgtMaaned);
   renderBudsjettTabell();
@@ -1928,6 +1972,7 @@ function visKlarSide() {
   document.getElementById('restordre-side').style.display          = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
   document.getElementById('levdat-side').style.display             = 'none';
+  document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('klar-side').style.display               = 'block';
   document.getElementById('admin-knapp').style.display             = 'none';
 
@@ -2155,6 +2200,7 @@ function visRestordreSide() {
   document.getElementById('klar-side').style.display               = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
   document.getElementById('levdat-side').style.display             = 'none';
+  document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('restordre-side').style.display          = 'block';
   document.getElementById('admin-knapp').style.display             = 'none';
   document.getElementById('restordre-mnd-label').textContent = maanedLabel(valgtMaaned);
@@ -2349,6 +2395,7 @@ function visKostnadskontrollSide() {
   document.getElementById('klar-side').style.display               = 'none';
   document.getElementById('restordre-side').style.display          = 'none';
   document.getElementById('levdat-side').style.display             = 'none';
+  document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'block';
   document.getElementById('admin-knapp').style.display             = 'none';
 
@@ -2504,7 +2551,10 @@ document.getElementById('levdat-knapp').addEventListener('click', visLevdatSide)
 document.getElementById('levdat-tilbake-knapp').addEventListener('click', () => {
   document.getElementById('levdat-side').style.display     = 'none';
   document.getElementById('rapport-visning').style.display = 'block';
-  if (isAdmin(gjeldendeBruker)) document.getElementById('admin-knapp').style.display = 'inline-flex';
+  if (isAdmin(gjeldendeBruker)) {
+    document.getElementById('admin-knapp').style.display  = 'inline-flex';
+    document.getElementById('avvik-knapp').style.display  = 'inline-flex';
+  }
 });
 document.getElementById('levdat-avd-filter').addEventListener('change', function() {
   valgtLevdatAvd = this.value; lastLevdatData();
@@ -2519,8 +2569,10 @@ function visLevdatSide() {
   document.getElementById('klar-side').style.display               = 'none';
   document.getElementById('restordre-side').style.display          = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
+  document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('levdat-side').style.display             = 'block';
   document.getElementById('admin-knapp').style.display             = 'none';
+  document.getElementById('avvik-knapp').style.display             = 'none';
 
   const avdFilter = document.getElementById('levdat-avd-filter');
   if (avdFilter.options.length <= 1 && alleAvdelinger.length) {
@@ -2642,6 +2694,81 @@ function sorterLevdat(kol) {
     levdatSortDir = 1;
   }
   renderLevdatTabell(levdatData);
+}
+
+
+
+// ── Avvik avdeling (admin) ─────────────────────────────────────────────────
+
+let avvikData = [];
+
+document.getElementById('avvik-knapp').addEventListener('click', visAvvikSide);
+document.getElementById('avvik-tilbake-knapp').addEventListener('click', () => {
+  document.getElementById('avvik-side').style.display      = 'none';
+  document.getElementById('rapport-visning').style.display = 'block';
+  if (isAdmin(gjeldendeBruker)) {
+    document.getElementById('admin-knapp').style.display   = 'inline-flex';
+    document.getElementById('avvik-knapp').style.display   = 'inline-flex';
+  }
+});
+
+function visAvvikSide() {
+  document.getElementById('rapport-visning').style.display        = 'none';
+  document.getElementById('budsjett-side').style.display          = 'none';
+  document.getElementById('klar-side').style.display              = 'none';
+  document.getElementById('restordre-side').style.display         = 'none';
+  document.getElementById('kostnadskontroll-side').style.display  = 'none';
+  document.getElementById('levdat-side').style.display            = 'none';
+  document.getElementById('avvik-side').style.display             = 'block';
+  document.getElementById('admin-knapp').style.display            = 'none';
+  document.getElementById('avvik-knapp').style.display            = 'none';
+  document.getElementById('avvik-mnd-label').textContent          = maanedLabel(valgtMaaned);
+  lastAvvikData();
+}
+
+async function lastAvvikData() {
+  const tbody = document.getElementById('avvik-tbody');
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr>';
+  document.getElementById('avvik-kpi-rad').innerHTML = '';
+  const { data, error } = await sb.rpc('fn_avvik_avdeling', { p_maaned: valgtMaaned });
+  if (error || !data) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--red)">Feil: ' + (error?.message || 'ukjent') + '</td></tr>';
+    return;
+  }
+  avvikData = data;
+  renderAvvikTabell(data);
+}
+
+function renderAvvikTabell(data) {
+  const kpiEl = document.getElementById('avvik-kpi-rad');
+  const totBeloep = data.reduce((s, r) => s + Number(r.net_amount || 0), 0);
+  kpiEl.innerHTML = `
+    <div class="kpi">
+      <div class="kpi-label">Antall avvik</div>
+      <div class="kpi-value">${data.length}</div>
+      <div class="kpi-sub">fakturaer feilkodet avdeling</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Totalt beløp</div>
+      <div class="kpi-value">${fmt(totBeloep)}</div>
+      <div class="kpi-sub">sum innkommende fakturaer</div>
+    </div>`;
+
+  const tbody = document.getElementById('avvik-tbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Ingen avvik funnet for denne måneden.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(r => `<tr>
+    <td style="color:var(--muted);font-size:0.8rem">${r.order_number}</td>
+    <td>${r.customer_name || '–'}</td>
+    <td><span style="color:var(--green);font-weight:600">${r.prodsys_avdeling || '–'}</span></td>
+    <td><span style="color:var(--red);font-weight:600">${r.po_avdeling || '–'}</span></td>
+    <td class="num">${fmt(r.net_amount)}</td>
+    <td style="color:var(--muted)">${r.voucher_date ? fmtDato(r.voucher_date) : '–'}</td>
+    <td style="color:var(--muted);font-size:0.82rem">${r.invoice_no || '–'}</td>
+    <td style="color:var(--muted);font-size:0.82rem">${r.supplier_no || '–'}</td>
+  </tr>`).join('');
 }
 
 setInterval(() => location.reload(), 60 * 60 * 1000);
