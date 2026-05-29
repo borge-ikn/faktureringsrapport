@@ -1278,7 +1278,7 @@
         <tr>
           <th>Avdeling</th>
           <th>Ordreverdi</th>
-          <th>Fakturert hittil</th>
+          <th>Fakturert</th>
           <th>Restbeløp</th>
           <th>Grad</th>
         </tr>
@@ -2232,7 +2232,7 @@ async function renderRestordreTabell() {
       <tr class="avd-rad" id="rad-${r.avdeling}" onclick="toggleDetaljer('${r.avdeling.replace(/'/g,"\\'")}')">
         <td><i class="chevron">▶</i>${r.avdeling}</td>
         <td>${fmt(r.ordre_verdi)}</td>
-        <td>${fmt(r.fakturert_hittil)}</td>
+        <td>${fmt(r.fakturert)}</td>
         <td>${fmt(r.restbeloep)}</td>
         <td>${chip}</td>
       </tr>
