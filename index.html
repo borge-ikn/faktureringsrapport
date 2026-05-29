@@ -2215,11 +2215,12 @@ async function renderRestordreTabell() {
 
   const erBrukerAdmin = isAdmin(gjeldendeBruker);
   tbody.innerHTML = data.map(r => {
-    const grad      = r.grad != null ? Number(r.grad) : null;
-    const gradFarge2 = grad != null ? gradFarge(grad) : '#9ca3af';
-    const chip      = grad != null
-      ? `<span class="grad-chip" style="background:${gradFarge2}">${grad.toFixed(1)}%</span>`
-      : '<span style="color:var(--muted)">–</span>';
+    const fakturertNum = Number(r.fakturert) || 0;
+    const restbeloepNum = Number(r.restbeloep) || 0;
+    const total = fakturertNum + restbeloepNum;
+    const grad = total > 0 ? Math.min(fakturertNum / total * 100, 100) : 0;
+    const gradFarge2 = gradFarge(grad);
+    const chip = `<span class="grad-chip" style="background:${gradFarge2}">${grad.toFixed(1)}%</span>`;
     const kommentar = r.kommentar || alleKommentarer[r.avdeling] || null;
     const kommentarRad = `
       <tr class="detalj-rad" id="krad-${r.avdeling}">
