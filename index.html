@@ -2241,7 +2241,7 @@ async function renderRestordreTabell() {
             <div class="restordre-bar" style="flex:1">
               <div class="restordre-bar-fill" style="width:${Math.min(grad,100)}%;background:${gradFarge2}"></div>
             </div>
-            <span style="font-size:1.1rem;line-height:1">${grad>=95?'🏆':grad>=75?'🏃':grad>=50?'🚶':grad>=25?'🐢':'😴'}</span>
+            <span style="font-size:1.1rem;line-height:1;display:inline-block;transform:scaleX(-1)">${grad>=95?'🏆':grad>=75?'🏃':grad>=50?'🚶':grad>=25?'🐢':'😴'}</span>
           </div>
         </td>
         <td>${fmt(r.fakturert)}</td>
