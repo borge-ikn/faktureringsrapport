@@ -698,6 +698,15 @@
       font-size: 1rem;
       font-weight: 700;
     }
+    .restordre-maaned-velger {
+      font-size: .85rem;
+      padding: .25rem .5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
 
     .restordre-tabell {
       width: 100%;
@@ -1296,7 +1305,8 @@
   <div id="restordre-side" style="display:none">
     <div class="restordre-side-topplinje">
       <button class="tilbake-knapp" id="restordre-tilbake-knapp">← Tilbake til rapport</button>
-      <span class="restordre-side-tittel">Faktureringsgrad mot restordre — <span id="restordre-mnd-label"></span></span>
+      <span class="restordre-side-tittel">Faktureringsgrad mot restordre</span>
+      <select id="restordre-maaned-velger" class="restordre-maaned-velger" title="Velg måned for restordre"></select>
     </div>
     <table class="restordre-tabell" id="restordre-tabell">
       <thead>
@@ -1586,6 +1596,7 @@ let alleAvdelinger   = [];
 let alleSjekkpunkter = [];
 let alleKommentarer  = {};   // { avdeling: kommentar }
 let valgtMaaned      = null;
+let restordreMaaned  = null;
 let dashboardInit    = false;
 let modalAvdeling    = null;
 let gjeldendeBruker  = '';
@@ -1672,12 +1683,6 @@ async function lastData(maaned) {
 
   oppdaterVisning();
 
-  // Oppdater restordre-siden hvis den er synlig
-  if (document.getElementById('restordre-side').style.display !== 'none') {
-    document.getElementById('restordre-mnd-label').textContent = maanedLabel(valgtMaaned);
-    renderRestordreTabell();
-    renderTimerTabell();
-  }
 }
 
 async function oppdaterVisning() {
@@ -2240,7 +2245,18 @@ function visRestordreSide() {
   document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('restordre-side').style.display          = 'block';
   setAktivNav('restordre-knapp'); setHeaderFiltre(false);
-  document.getElementById('restordre-mnd-label').textContent = maanedLabel(valgtMaaned);
+
+  restordreMaaned = valgtMaaned;
+  const kildeVelger = document.getElementById('maaned-velger');
+  const lokal = document.getElementById('restordre-maaned-velger');
+  lokal.innerHTML = kildeVelger.innerHTML;
+  lokal.value = valgtMaaned;
+  lokal.onchange = () => {
+    restordreMaaned = lokal.value;
+    renderRestordreTabell();
+    renderTimerTabell();
+  };
+
   renderRestordreTabell();
   renderTimerTabell();
 }
@@ -2249,7 +2265,7 @@ async function renderTimerTabell() {
   const tbody = document.getElementById('timer-tbody');
   tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner">Laster…</td></tr>';
 
-  const { data, error } = await sb.rpc('fn_timer_per_avdeling', { p_maaned: valgtMaaned });
+  const { data, error } = await sb.rpc('fn_timer_per_avdeling', { p_maaned: restordreMaaned });
   if (error || !data || !data.length) {
     tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner" style="color:var(--muted)">Ingen timedata for denne måneden.</td></tr>';
     return;
@@ -2285,7 +2301,7 @@ async function renderRestordreTabell() {
   const tbody = document.getElementById('restordre-tbody');
   tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner">Laster…</td></tr>';
 
-  const { data, error } = await sb.rpc('fn_restordre_grad', { p_maaned: valgtMaaned });
+  const { data, error } = await sb.rpc('fn_restordre_grad', { p_maaned: restordreMaaned });
   if (error || !data) {
     tbody.innerHTML = '<tr><td colspan="5" class="detalj-spinner" style="color:var(--red)">Feil ved lasting.</td></tr>';
     return;
@@ -2357,7 +2373,7 @@ async function toggleDetaljer(avdeling) {
   innhold.innerHTML = '<div class="detalj-spinner">Laster ordredetaljer…</div>';
 
   const { data, error } = await sb.rpc('fn_restordre_detaljer', {
-    p_maaned:   valgtMaaned,
+    p_maaned:   restordreMaaned,
     p_avdeling: avdeling
   });
 
