@@ -97,6 +97,9 @@ export default async () => {
   const now = new Date().toISOString();
 
   for (const budget of budgets) {
+    const kontokoder = [...new Set((budget.BudgetLineItems || []).map(i => i.AccountCode))];
+    console.log(`Budsjett: "${budget.Name}" | Kontoer: ${kontokoder.join(',')} | Linjer: ${(budget.BudgetLineItems||[]).length}`);
+
     const match = budget.Name?.match(/^(\d+)_/);
     if (!match) {
       console.warn(`Ukjent budsjettformat (hopper over): ${budget.Name}`);
@@ -109,7 +112,6 @@ export default async () => {
       continue;
     }
 
-    // Summer kun inntektskontoer (3000–3999) per måned
     const perMonth = {};
     for (const item of budget.BudgetLineItems || []) {
       if (item.AccountCode === 3000 && item.Year === year) {
