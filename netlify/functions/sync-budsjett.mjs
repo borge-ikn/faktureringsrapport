@@ -62,7 +62,7 @@ async function fetchAvdelingMap() {
 }
 
 async function upsertBudgets(rows) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/budgets`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/budgets?on_conflict=department_name,month`, {
     method: "POST",
     headers: {
       apikey: SUPABASE_SERVICE_KEY,
