@@ -1834,6 +1834,7 @@ document.getElementById('tilbake-knapp').addEventListener('click', () => {
   document.getElementById('kostnadskontroll-side').style.display  = 'none';
   document.getElementById('rapport-visning').style.display        = 'block';
   setAktivNav(null); setHeaderFiltre(true);
+  renderPall(alleAvdelinger);
 });
 document.getElementById('kopier-forrige-knapp').addEventListener('click', kopierForrigeMaaned);
 
@@ -2032,6 +2033,7 @@ document.getElementById('klar-tilbake-knapp').addEventListener('click', () => {
   document.getElementById('klar-side').style.display       = 'none';
   document.getElementById('rapport-visning').style.display = 'block';
   setAktivNav(null); setHeaderFiltre(true);
+  renderPall(alleAvdelinger);
 });
 document.getElementById('klar-filter-maaned').addEventListener('change', lastKlarData);
 document.getElementById('klar-filter-avd').addEventListener('change', lastKlarData);
@@ -2289,6 +2291,7 @@ document.getElementById('restordre-tilbake-knapp').addEventListener('click', () 
   document.getElementById('restordre-side').style.display    = 'none';
   document.getElementById('rapport-visning').style.display   = 'block';
   setAktivNav(null); setHeaderFiltre(true);
+  renderPall(alleAvdelinger);
 });
 
 function visRestordreSide() {
@@ -2488,6 +2491,7 @@ document.getElementById('kostnadskontroll-tilbake-knapp').addEventListener('clic
   document.getElementById('kostnadskontroll-side').style.display = 'none';
   document.getElementById('rapport-visning').style.display       = 'block';
   setAktivNav(null); setHeaderFiltre(true);
+  renderPall(alleAvdelinger);
 });
 document.getElementById('kostnad-avd-filter').addEventListener('change', function() {
   valgtKostnadAvd = this.value;
@@ -2662,6 +2666,7 @@ document.getElementById('levdat-tilbake-knapp').addEventListener('click', () => 
   document.getElementById('levdat-side').style.display     = 'none';
   document.getElementById('rapport-visning').style.display = 'block';
   setAktivNav(null); setHeaderFiltre(true);
+  renderPall(alleAvdelinger);
 });
 document.getElementById('levdat-avd-filter').addEventListener('change', function() {
   valgtLevdatAvd = this.value; lastLevdatData();
@@ -2823,6 +2828,7 @@ document.getElementById('avvik-tilbake-knapp').addEventListener('click', () => {
   document.getElementById('avvik-side').style.display      = 'none';
   document.getElementById('rapport-visning').style.display = 'block';
   setAktivNav(null); setHeaderFiltre(true);
+  renderPall(alleAvdelinger);
 });
 
 function visAvvikSide() {
