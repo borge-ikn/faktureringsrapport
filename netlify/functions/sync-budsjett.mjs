@@ -98,10 +98,6 @@ export default async () => {
 
   for (const budget of budgets) {
     const linjer = budget.BudgetLineItems || [];
-    if (linjer.length > 0) console.log(`Første linje-item keys: ${Object.keys(linjer[0]).join(', ')}`);
-    if (linjer.length > 0) console.log(`Første linje-item: ${JSON.stringify(linjer[0])}`);
-    const kontokoder = [...new Set(linjer.map(i => i.AccountCode))];
-    console.log(`Budsjett: "${budget.Name}" | Kontoer: ${kontokoder.join(',')} | Linjer: ${linjer.length}`);
 
     const match = budget.Name?.match(/^(\d+)_/);
     if (!match) {
@@ -116,8 +112,8 @@ export default async () => {
     }
 
     const perMonth = {};
-    for (const item of budget.BudgetLineItems || []) {
-      if (item.AccountCode === 3000 && item.Year === year) {
+    for (const item of linjer) {
+      if (item.Amount < 0 && item.Year === year) {
         const m = item.Month;
         perMonth[m] = (perMonth[m] || 0) + Math.abs(item.Amount);
       }
