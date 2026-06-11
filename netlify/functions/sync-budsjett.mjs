@@ -110,11 +110,7 @@ export default async () => {
     // Summer kun inntektskontoer (3000–3999) per måned
     const perMonth = {};
     for (const item of budget.BudgetLineItems || []) {
-      if (
-        item.AccountCode >= 3000 &&
-        item.AccountCode < 4000 &&
-        item.Year === year
-      ) {
+      if (item.AccountCode === 3000 && item.Year === year) {
         const m = item.Month;
         perMonth[m] = (perMonth[m] || 0) + Math.abs(item.Amount);
       }
