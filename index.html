@@ -326,6 +326,18 @@
       font-weight: 700;
       flex: 1;
     }
+    .budsjett-mnd-select {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      padding: 3px 8px;
+      cursor: pointer;
+      outline: none;
+      margin-left: 6px;
+    }
 
     .kopier-knapp {
       background: var(--surface);
@@ -1488,7 +1500,7 @@
   <div id="budsjett-side">
     <div class="budsjett-topplinje">
       <button class="tilbake-knapp" id="tilbake-knapp">← Tilbake til rapport</button>
-      <span class="budsjett-side-tittel">Budsjettstyring — <span id="budsjett-mnd-label"></span></span>
+      <span class="budsjett-side-tittel">Budsjettstyring — <select id="budsjett-mnd-velger" class="budsjett-mnd-select"></select></span>
       <button class="kopier-knapp" id="kopier-forrige-knapp">↩ Kopier fra forrige måned</button>
     </div>
     <div class="po-sync-banner">
@@ -1631,6 +1643,7 @@ let alleAvdelinger   = [];
 let alleSjekkpunkter = [];
 let alleKommentarer  = {};   // { avdeling: kommentar }
 let valgtMaaned          = null;
+let budsjettMaaned       = null;
 let restordreMaaned      = null;
 let startvisningAnvendt  = false;
 let dashboardInit        = false;
@@ -1848,15 +1861,45 @@ function visBudsjettSide() {
   document.getElementById('avvik-side').style.display              = 'none';
   document.getElementById('budsjett-side').style.display           = 'block';
   setAktivNav('admin-knapp'); setHeaderFiltre(false);
-  document.getElementById('budsjett-mnd-label').textContent = maanedLabel(valgtMaaned);
-  renderBudsjettTabell();
+
+  // Bygg månedsdropdown for inneværende og forrige år
+  budsjettMaaned = valgtMaaned;
+  const velger = document.getElementById('budsjett-mnd-velger');
+  velger.innerHTML = '';
+  const now = new Date();
+  const aar = [now.getFullYear(), now.getFullYear() - 1];
+  const mndNavn = ['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember'];
+  for (const y of aar) {
+    for (let m = 11; m >= 0; m--) {
+      const val = `${y}-${String(m+1).padStart(2,'0')}-01`;
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = `${mndNavn[m]} ${y}`;
+      if (val === budsjettMaaned) opt.selected = true;
+      velger.appendChild(opt);
+    }
+  }
+  velger.onchange = () => {
+    budsjettMaaned = velger.value;
+    lastOgRenderBudsjett(budsjettMaaned);
+  };
+  lastOgRenderBudsjett(budsjettMaaned);
 }
 
-function renderBudsjettTabell() {
+async function lastOgRenderBudsjett(maaned) {
+  const { data } = await sb.from('budgets')
+    .select('department_name, budsjett')
+    .eq('month', maaned);
+  const map = Object.fromEntries((data || []).map(r => [r.department_name, r.budsjett]));
+  renderBudsjettTabell(map);
+}
+
+function renderBudsjettTabell(budsjettMap = {}) {
   const tbody = document.getElementById('budsjett-tbody');
   tbody.innerHTML = alleAvdelinger.map(r => {
-    const budsjettVerdi = r.budsjett != null ? Math.round(Number(r.budsjett)) : '';
-    const sistEndret    = r.budsjett != null ? '–' : '';   // updated_at finnes ikke i fn ennå
+    const bv = budsjettMap[r.avdeling];
+    const budsjettVerdi = bv != null ? Math.round(Number(bv)) : '';
+    const sistEndret    = bv != null ? '–' : '';
     return `
       <tr>
         <td style="font-weight:600">${r.avdeling}</td>
@@ -1898,7 +1941,7 @@ async function lagreBudsjettRad(avdeling) {
 
   const { error } = await sb.rpc('fn_lagre_budsjett', {
     p_avdeling: avdeling,
-    p_maaned:   valgtMaaned,
+    p_maaned:   budsjettMaaned,
     p_budsjett: verdi
   });
 
@@ -1919,7 +1962,7 @@ async function lagreBudsjettRad(avdeling) {
 }
 
 async function kopierForrigeMaaned() {
-  const d = new Date(valgtMaaned + 'T00:00:00');
+  const d = new Date(budsjettMaaned + 'T00:00:00');
   d.setMonth(d.getMonth() - 1);
   const forrigeMnd = d.toISOString().slice(0, 7) + '-01';
 
