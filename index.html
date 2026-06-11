@@ -185,8 +185,9 @@
 
     .logo {
       display: flex;
-      align-items: center;
-      gap: 0.7rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.2rem;
     }
 
     .logo-svg {
@@ -1235,6 +1236,11 @@
     </div>
   </header>
 
+  <div id="pall-seksjon" style="display:none">
+    <div class="pall-tittel">Faktureringsgrad — avdelingsrangering</div>
+    <div class="pall-container" id="pall-container"></div>
+  </div>
+
   <div class="varsel" id="varsel">
     Ingen budsjettsnapshot funnet for denne måneden — viser ordreverdi som budsjettgrunnlag.
   </div>
@@ -1273,10 +1279,6 @@
       <div class="spinner">Laster...</div>
     </div>
 
-    <div id="pall-seksjon" style="margin-top:2rem; display:none">
-      <div class="pall-tittel">Faktureringsgrad — avdelingsrangering</div>
-      <div class="pall-container" id="pall-container"></div>
-    </div>
   </div>
 
   <!-- Klar for fakturering-side -->
@@ -1836,6 +1838,7 @@ document.getElementById('tilbake-knapp').addEventListener('click', () => {
 document.getElementById('kopier-forrige-knapp').addEventListener('click', kopierForrigeMaaned);
 
 function visBudsjettSide() {
+  document.getElementById('pall-seksjon').style.display            = 'none';
   document.getElementById('rapport-visning').style.display         = 'none';
   document.getElementById('klar-side').style.display               = 'none';
   document.getElementById('restordre-side').style.display          = 'none';
@@ -2060,6 +2063,7 @@ function setKlarFane(btn) {
 let klarData = [];
 
 function visKlarSide() {
+  document.getElementById('pall-seksjon').style.display            = 'none';
   document.getElementById('rapport-visning').style.display         = 'none';
   document.getElementById('budsjett-side').style.display           = 'none';
   document.getElementById('restordre-side').style.display          = 'none';
@@ -2288,6 +2292,7 @@ document.getElementById('restordre-tilbake-knapp').addEventListener('click', () 
 });
 
 function visRestordreSide() {
+  document.getElementById('pall-seksjon').style.display            = 'none';
   document.getElementById('rapport-visning').style.display         = 'none';
   document.getElementById('budsjett-side').style.display           = 'none';
   document.getElementById('klar-side').style.display               = 'none';
@@ -2494,6 +2499,7 @@ document.getElementById('kostnad-status-filter').addEventListener('change', func
 });
 
 function visKostnadskontrollSide() {
+  document.getElementById('pall-seksjon').style.display            = 'none';
   document.getElementById('rapport-visning').style.display         = 'none';
   document.getElementById('budsjett-side').style.display           = 'none';
   document.getElementById('klar-side').style.display               = 'none';
@@ -2665,6 +2671,7 @@ document.getElementById('levdat-gruppe-filter').addEventListener('change', funct
 });
 
 function visLevdatSide() {
+  document.getElementById('pall-seksjon').style.display            = 'none';
   document.getElementById('rapport-visning').style.display         = 'none';
   document.getElementById('budsjett-side').style.display           = 'none';
   document.getElementById('klar-side').style.display               = 'none';
@@ -2819,6 +2826,7 @@ document.getElementById('avvik-tilbake-knapp').addEventListener('click', () => {
 });
 
 function visAvvikSide() {
+  document.getElementById('pall-seksjon').style.display           = 'none';
   document.getElementById('rapport-visning').style.display        = 'none';
   document.getElementById('budsjett-side').style.display          = 'none';
   document.getElementById('klar-side').style.display              = 'none';
