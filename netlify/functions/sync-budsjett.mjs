@@ -2,7 +2,7 @@ export const config = {
   schedule: "0 2 * * *",
 };
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_URL = 'https://eeikodpeeybrzgxcsflh.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const PO_CLIENT_ID = process.env.PO_CLIENT_ID;
 const PO_CLIENT_SECRET = process.env.PO_CLIENT_SECRET;
