@@ -9,15 +9,13 @@ const PO_CLIENT_SECRET = process.env.PO_CLIENT_SECRET;
 const PO_SUBSCRIPTION_KEY = process.env.PO_SUBSCRIPTION_KEY;
 
 async function getPoToken() {
-  const body = new URLSearchParams({
-    grant_type: "client_credentials",
-    client_id: PO_CLIENT_ID,
-    client_secret: PO_CLIENT_SECRET,
-  });
+  const credentials = Buffer.from(`${PO_CLIENT_ID}:${PO_CLIENT_SECRET}`).toString("base64");
+  const body = new URLSearchParams({ grant_type: "client_credentials" });
   const res = await fetch("https://goapi.poweroffice.net/OAuth/Token", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": `Basic ${credentials}`,
       "Ocp-Apim-Subscription-Key": PO_SUBSCRIPTION_KEY,
     },
     body: body.toString(),
