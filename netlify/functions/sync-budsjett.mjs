@@ -14,7 +14,7 @@ async function getPoToken() {
     client_id: PO_CLIENT_ID,
     client_secret: PO_CLIENT_SECRET,
   });
-  const res = await fetch("https://auth.poweroffice.net/OAuth/Token", {
+  const res = await fetch("https://goapi.poweroffice.net/OAuth/Token", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
