@@ -83,11 +83,15 @@ async function upsertBudgets(rows) {
 export default async () => {
   const year = new Date().getFullYear();
 
-  const [avdelingMap, token] = await Promise.all([
-    fetchAvdelingMap(),
-    getPoToken(),
-  ]);
+  console.log('Steg 1: Henter avdelinger fra Supabase...');
+  const avdelingMap = await fetchAvdelingMap();
+  console.log(`Avdelinger lastet: ${Object.keys(avdelingMap).length} stk`);
 
+  console.log('Steg 2: Henter OAuth-token fra PowerOffice...');
+  const token = await getPoToken();
+  console.log('Token OK');
+
+  console.log(`Steg 3: Henter budsjetter fra PO for år ${year}...`);
   const budgets = await fetchPoBudgets(token, year);
   console.log(`Hentet ${budgets.length} budsjetter fra PO for år ${year}`);
 
