@@ -945,6 +945,46 @@
     }
     .avvik-knapp:hover { background: rgba(255,255,255,0.2); }
 
+    .respons-knapp {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 6px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.83rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: #fff;
+    }
+    .respons-knapp:hover { background: rgba(255,255,255,0.2); }
+
+    .respons-toggle-gruppe {
+      display: flex;
+      gap: 4px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px;
+    }
+    .respons-type-knapp {
+      background: none;
+      border: none;
+      border-radius: 4px;
+      padding: 0.3rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--muted);
+      transition: all 0.15s;
+    }
+    .respons-type-knapp.aktiv {
+      background: var(--accent);
+      color: #fff;
+    }
+    .respons-type-knapp:hover:not(.aktiv) { background: var(--border); }
+
     .nav-aktiv {
       background: rgba(255,255,255,0.22) !important;
       border-bottom: 3px solid var(--gold) !important;
@@ -1241,6 +1281,7 @@
       <button class="kostnadskontroll-knapp" id="kostnadskontroll-knapp">🔍 Kostnadskontroll</button>
       <button class="levdat-knapp" id="levdat-knapp">📅 Leveringsdato</button>
       <button class="avvik-knapp" id="avvik-knapp">⚠️ Avvik avdeling</button>
+      <button class="respons-knapp" id="respons-knapp">⏱ Responstid</button>
       <div class="bruker-info">
         <span id="bruker-navn">–</span>
         <button class="logg-ut" id="logg-ut-knapp">Logg ut</button>
@@ -1485,6 +1526,54 @@
     </table>
   </div>
 
+  <!-- Responstid-side -->
+  <div id="respons-side" style="display:none; padding:24px; max-width:1400px; margin:0 auto;">
+    <div class="kostnad-topplinje">
+      <button class="tilbake-knapp" id="respons-tilbake-knapp">← Tilbake til rapport</button>
+      <span class="kostnad-tittel">⏱ Tid fra siste time til fakturering</span>
+      <div class="kostnad-filter-gruppe">
+        <div class="respons-toggle-gruppe">
+          <button class="respons-type-knapp aktiv" data-type="fakturert">Fakturerte</button>
+          <button class="respons-type-knapp" data-type="aapen">Åpne ordrer</button>
+          <button class="respons-type-knapp" data-type="derivert">Derivert</button>
+        </div>
+        <label style="font-size:0.83rem; color:var(--muted)">År:</label>
+        <select id="respons-aar-velger" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.6rem;font-size:0.83rem;color:var(--text)"></select>
+        <label style="font-size:0.83rem; color:var(--muted)">Avdeling:</label>
+        <select id="respons-avd-velger" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0.6rem;font-size:0.83rem;color:var(--text)">
+          <option value="">Alle avdelinger</option>
+        </select>
+      </div>
+    </div>
+    <div id="respons-beskrivelse" style="margin-bottom:12px; font-size:0.85rem; color:var(--muted)">
+      Gjennomsnittlig antall dager fra siste timeregistrering til fakturaen ble sendt.
+    </div>
+    <div style="background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px; margin-bottom:24px;">
+      <canvas id="respons-kart" style="max-height:420px;"></canvas>
+    </div>
+    <div id="respons-detalj-seksjon" style="display:none;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+        <span id="respons-detalj-tittel" style="font-size:1rem; font-weight:700; color:var(--accent)"></span>
+        <button onclick="document.getElementById('respons-detalj-seksjon').style.display='none'"
+                style="background:none;border:1px solid var(--border);border-radius:6px;padding:0.25rem 0.7rem;font-size:0.8rem;cursor:pointer;color:var(--muted)">✕ Lukk</button>
+      </div>
+      <table class="restordre-tabell">
+        <thead>
+          <tr>
+            <th>Ordrenr.</th>
+            <th>Kunde</th>
+            <th>Siste time</th>
+            <th>Fakturadato</th>
+            <th class="num">Dager forsinkelse</th>
+          </tr>
+        </thead>
+        <tbody id="respons-detalj-tbody">
+          <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Klikk på en søyle i diagrammet for å se detaljer.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Kommentar-modal -->
   <div class="modal-overlay" id="kommentar-modal" style="display:none">
     <div class="modal-boks">
@@ -1527,7 +1616,7 @@ const ADMIN_EMAILS = ['kno@industrikran.no', 'eli@industrikran.no', 'bkv@industr
 function isAdmin(email) { return ADMIN_EMAILS.includes((email || '').toLowerCase()); }
 
 const NAV_KNAPPER = ['klar-knapp','restordre-knapp','admin-knapp',
-                     'kostnadskontroll-knapp','levdat-knapp','avvik-knapp'];
+                     'kostnadskontroll-knapp','levdat-knapp','avvik-knapp','respons-knapp'];
 
 function setAktivNav(id) {
   NAV_KNAPPER.forEach(k => {
@@ -1595,6 +1684,7 @@ sb.auth.onAuthStateChange((_event, session) => {
     document.getElementById('restordre-knapp').style.display         = 'inline-flex';
     document.getElementById('kostnadskontroll-knapp').style.display  = 'inline-flex';
     document.getElementById('levdat-knapp').style.display           = 'inline-flex';
+    document.getElementById('respons-knapp').style.display          = 'inline-flex';
     if (isAdmin(session.user.email)) {
       document.getElementById('admin-knapp').style.display   = 'inline-flex';
       document.getElementById('avvik-knapp').style.display   = 'inline-flex';
@@ -1859,6 +1949,7 @@ function visBudsjettSide() {
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
   document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('avvik-side').style.display              = 'none';
+  document.getElementById('respons-side').style.display            = 'none';
   document.getElementById('budsjett-side').style.display           = 'block';
   setAktivNav('admin-knapp'); setHeaderFiltre(false);
 
@@ -2115,6 +2206,7 @@ function visKlarSide() {
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
   document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('avvik-side').style.display              = 'none';
+  document.getElementById('respons-side').style.display            = 'none';
   document.getElementById('klar-side').style.display               = 'block';
   setAktivNav('klar-knapp'); setHeaderFiltre(false);
 
@@ -2345,6 +2437,7 @@ function visRestordreSide() {
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
   document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('avvik-side').style.display              = 'none';
+  document.getElementById('respons-side').style.display            = 'none';
   document.getElementById('restordre-side').style.display          = 'block';
   setAktivNav('restordre-knapp'); setHeaderFiltre(false);
 
@@ -2553,6 +2646,7 @@ function visKostnadskontrollSide() {
   document.getElementById('restordre-side').style.display          = 'none';
   document.getElementById('levdat-side').style.display             = 'none';
   document.getElementById('avvik-side').style.display              = 'none';
+  document.getElementById('respons-side').style.display            = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'block';
   setAktivNav('kostnadskontroll-knapp'); setHeaderFiltre(false);
 
@@ -2726,6 +2820,7 @@ function visLevdatSide() {
   document.getElementById('restordre-side').style.display          = 'none';
   document.getElementById('kostnadskontroll-side').style.display   = 'none';
   document.getElementById('avvik-side').style.display              = 'none';
+  document.getElementById('respons-side').style.display            = 'none';
   document.getElementById('levdat-side').style.display             = 'block';
   setAktivNav('levdat-knapp'); setHeaderFiltre(false);
 
@@ -2882,6 +2977,7 @@ function visAvvikSide() {
   document.getElementById('restordre-side').style.display         = 'none';
   document.getElementById('kostnadskontroll-side').style.display  = 'none';
   document.getElementById('levdat-side').style.display            = 'none';
+  document.getElementById('respons-side').style.display           = 'none';
   document.getElementById('avvik-side').style.display             = 'block';
   setAktivNav('avvik-knapp'); setHeaderFiltre(false);
 
@@ -2964,6 +3060,222 @@ function renderAvvikTabell(data) {
       <td style="color:var(--muted);font-size:0.82rem;max-width:220px;white-space:pre-wrap">${r.description || ''}</td>
     </tr>`;
   }).join('');
+}
+
+// ── Faktureringsrespons ────────────────────────────────────────────────────
+
+let responsType = 'fakturert';
+let responsAar = new Date().getFullYear();
+let responsAvdeling = '';
+let responsKart = null;
+let responsData = [];
+
+document.getElementById('respons-knapp').addEventListener('click', visResponsSide);
+document.getElementById('respons-tilbake-knapp').addEventListener('click', () => {
+  document.getElementById('respons-side').style.display      = 'none';
+  document.getElementById('rapport-visning').style.display   = 'block';
+  setAktivNav(null); setHeaderFiltre(true);
+  renderPall(alleAvdelinger);
+});
+document.getElementById('respons-aar-velger').addEventListener('change', function() {
+  responsAar = parseInt(this.value); renderResponsKart();
+});
+document.getElementById('respons-avd-velger').addEventListener('change', function() {
+  responsAvdeling = this.value; renderResponsKart();
+});
+document.querySelectorAll('.respons-type-knapp').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.respons-type-knapp').forEach(b => b.classList.remove('aktiv'));
+    this.classList.add('aktiv');
+    responsType = this.dataset.type;
+    const beskr = document.getElementById('respons-beskrivelse');
+    if (responsType === 'fakturert') {
+      beskr.textContent = 'Gjennomsnittlig antall dager fra siste timeregistrering til fakturaen ble sendt.';
+    } else if (responsType === 'aapen') {
+      beskr.textContent = 'Antall dager siden siste timeregistrering for ordrer som ikke er fakturert ennå.';
+    } else {
+      beskr.textContent = 'Endringsrate per måned: positiv verdi betyr at forsinkelsen øker (forverring), negativ betyr forbedring. Basert på fakturerte ordrer.';
+    }
+    document.getElementById('respons-detalj-seksjon').style.display = 'none';
+    renderResponsKart();
+  });
+});
+
+function visResponsSide() {
+  document.getElementById('pall-seksjon').style.display           = 'none';
+  document.getElementById('rapport-visning').style.display        = 'none';
+  document.getElementById('budsjett-side').style.display          = 'none';
+  document.getElementById('klar-side').style.display              = 'none';
+  document.getElementById('restordre-side').style.display         = 'none';
+  document.getElementById('kostnadskontroll-side').style.display  = 'none';
+  document.getElementById('levdat-side').style.display            = 'none';
+  document.getElementById('avvik-side').style.display             = 'none';
+  document.getElementById('respons-side').style.display           = 'block';
+  setAktivNav('respons-knapp'); setHeaderFiltre(false);
+
+  const aarVelger = document.getElementById('respons-aar-velger');
+  if (aarVelger.options.length === 0) {
+    const now = new Date().getFullYear();
+    for (let y = now; y >= 2023; y--) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      if (y === responsAar) o.selected = true;
+      aarVelger.appendChild(o);
+    }
+  }
+
+  const avdFilter = document.getElementById('respons-avd-velger');
+  if (avdFilter.options.length <= 1 && alleAvdelinger.length) {
+    alleAvdelinger.forEach(a => {
+      const o = document.createElement('option');
+      o.value = a.avdeling; o.textContent = a.avdeling;
+      avdFilter.appendChild(o);
+    });
+  }
+
+  renderResponsKart();
+}
+
+async function renderResponsKart() {
+  const fraDate = `${responsAar}-01-01`;
+  const tilDate = responsType === 'aapen'
+    ? new Date().toISOString().slice(0, 10)
+    : `${responsAar}-12-31`;
+  const fetchType = responsType === 'derivert' ? 'fakturert' : responsType;
+
+  const { data, error } = await sb.rpc('fn_faktureringsrespons_maaned', {
+    p_fra: fraDate,
+    p_til: tilDate,
+    p_type: fetchType
+  });
+
+  if (error) { console.error('Respons-feil:', error); return; }
+
+  responsData = data || [];
+  const filtrert = responsAvdeling
+    ? responsData.filter(r => r.avdeling === responsAvdeling)
+    : responsData;
+
+  const maanedNavn = ['jan','feb','mar','apr','mai','jun','jul','aug','sep','okt','nov','des'];
+  const maaneder = Array.from({length: 12}, (_, i) => {
+    const m = String(i + 1).padStart(2, '0');
+    return `${responsAar}-${m}-01`;
+  });
+  const labels = maaneder.map(m => {
+    const d = new Date(m + 'T12:00:00');
+    return `${maanedNavn[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+  });
+
+  const alleAvd = [...new Set(filtrert.map(r => r.avdeling))].sort();
+  const farger = [
+    '#1c3461','#e8a01c','#059669','#dc2626','#7c3aed',
+    '#0891b2','#d97706','#be185d','#16a34a','#9333ea'
+  ];
+
+  const datasets = alleAvd.map((avd, i) => {
+    const radData = maaneder.map(m => {
+      const rad = filtrert.find(r => r.avdeling === avd && r.maaned === m);
+      return rad ? Number(rad.snitt_dager) : null;
+    });
+
+    let visData = radData;
+    if (responsType === 'derivert') {
+      visData = radData.map((v, idx) => {
+        if (idx === 0 || v === null || radData[idx - 1] === null) return null;
+        return Math.round((v - radData[idx - 1]) * 10) / 10;
+      });
+    }
+
+    return {
+      label: avd,
+      data: visData,
+      backgroundColor: farger[i % farger.length] + 'cc',
+      borderColor: farger[i % farger.length],
+      borderWidth: 1,
+      borderRadius: 4,
+      skipNull: true
+    };
+  });
+
+  const ctx = document.getElementById('respons-kart').getContext('2d');
+  if (responsKart) { responsKart.destroy(); responsKart = null; }
+
+  responsKart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.raw;
+              if (v === null || v === undefined) return null;
+              return `${ctx.dataset.label}: ${v} ${responsType === 'derivert' ? 'dager/mnd' : 'dager'}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          title: { display: true, text: responsType === 'derivert' ? 'Endring (dager/mnd)' : 'Gjennomsnitt dager' },
+          ...(responsType === 'derivert' ? {} : { min: 0 })
+        }
+      },
+      onClick: (event, elements) => {
+        if (!elements.length || responsType === 'derivert') return;
+        const el = elements[0];
+        const maaned = maaneder[el.index];
+        const avd = datasets[el.datasetIndex]?.label;
+        if (avd) renderResponsDetaljer(avd, maaned, responsType);
+      }
+    }
+  });
+}
+
+async function renderResponsDetaljer(avdeling, maaned, type) {
+  const seksjon = document.getElementById('respons-detalj-seksjon');
+  const tittel  = document.getElementById('respons-detalj-tittel');
+  const tbody   = document.getElementById('respons-detalj-tbody');
+
+  const maanedNavn = ['jan','feb','mar','apr','mai','jun','jul','aug','sep','okt','nov','des'];
+  const d = new Date(maaned + 'T12:00:00');
+  tittel.textContent = `${avdeling} – ${maanedNavn[d.getMonth()]} ${d.getFullYear()}`;
+
+  seksjon.style.display = 'block';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Laster…</td></tr>';
+
+  const { data, error } = await sb.rpc('fn_faktureringsrespons_detaljer', {
+    p_avdeling: avdeling,
+    p_maaned: maaned,
+    p_type: type
+  });
+
+  if (error || !data) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--red)">Feil: ${error?.message || 'ukjent'}</td></tr>`;
+    return;
+  }
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--muted)">Ingen ordrer.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(r => {
+    const farge = r.dager_forsinkelse > 30 ? 'var(--red)' : r.dager_forsinkelse > 14 ? 'var(--yellow)' : 'var(--green)';
+    return `<tr>
+      <td style="color:var(--muted);font-size:0.82rem">${r.order_number}</td>
+      <td>${r.customer_name || '–'}</td>
+      <td style="color:var(--muted)">${r.siste_time_dato ? fmtDato(r.siste_time_dato) : '–'}</td>
+      <td style="color:var(--muted)">${r.invoice_date ? fmtDato(r.invoice_date) : '–'}</td>
+      <td class="num" style="font-weight:600;color:${farge}">${r.dager_forsinkelse} d</td>
+    </tr>`;
+  }).join('');
+
+  seksjon.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 setInterval(() => location.reload(), 60 * 60 * 1000);
