@@ -1608,7 +1608,7 @@
   </div>
 
   <!-- Responstid-side -->
-  <div id="respons-side" style="display:none; padding:24px; max-width:1400px; margin:0 auto;">
+  <div id="respons-side" style="display:none; padding:24px; max-width:1920px; margin:0 auto;">
     <div class="kostnad-topplinje">
       <button class="tilbake-knapp" id="respons-tilbake-knapp">← Tilbake til rapport</button>
       <span class="kostnad-tittel">⏱ Tid fra siste time til fakturering</span>
@@ -1630,10 +1630,14 @@
       Gjennomsnittlig antall dager fra siste timeregistrering til fakturaen ble sendt.
     </div>
     <div id="respons-kpi-rad" style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;"></div>
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:0.78rem; color:var(--muted);">
+      <span style="display:inline-block; width:22px; border-top:1px dashed rgba(28,52,97,0.6);"></span>
+      Stiplet linje = avdelingens snitt for perioden. Alle ruter deler samme y-akse for direkte sammenligning.
+    </div>
     <div style="background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px; margin-bottom:24px; position:relative; min-height:200px;">
       <div id="respons-laster" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; background:rgba(255,255,255,0.7); border-radius:var(--radius); z-index:2; color:var(--muted); font-size:0.9rem;">Laster…</div>
       <div id="respons-tom" style="display:none; text-align:center; padding:3rem 1rem; color:var(--muted); font-size:0.9rem;">Ingen data for valgt periode.</div>
-      <div id="respons-kart-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:18px;"></div>
+      <div id="respons-kart-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px;"></div>
     </div>
     <div id="respons-detalj-seksjon" style="display:none;">
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
@@ -3311,6 +3315,44 @@ async function renderResponsKart() {
 
   renderResponsKpi(filtrert);
 
+  // ── Plugin: verdi-etikett over hver søyle + stiplet snittlinje ──
+  const verdiPlugin = {
+    id: 'verdiPlugin',
+    afterDatasetsDraw(chart) {
+      const { ctx, chartArea, scales: { y } } = chart;
+      const ds = chart.data.datasets[0];
+      const meta = chart.getDatasetMeta(0);
+      const vals = ds.data.filter(v => v !== null && v !== undefined);
+      // Snittlinje for avdelingen
+      if (vals.length) {
+        const snitt = vals.reduce((s, v) => s + v, 0) / vals.length;
+        const ySnitt = y.getPixelForValue(snitt);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(28,52,97,0.4)';
+        ctx.setLineDash([4, 3]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(chartArea.left, ySnitt);
+        ctx.lineTo(chartArea.right, ySnitt);
+        ctx.stroke();
+        ctx.restore();
+      }
+      // Verdi over hver søyle
+      ctx.save();
+      ctx.font = '700 10px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#334155';
+      ctx.textAlign = 'center';
+      meta.data.forEach((bar, i) => {
+        const v = ds.data[i];
+        if (v === null || v === undefined) return;
+        const txt = (erDerivert && v > 0 ? '+' : '') + v;
+        if (v < 0) { ctx.textBaseline = 'top'; ctx.fillText(txt, bar.x, bar.y + 2); }
+        else       { ctx.textBaseline = 'bottom'; ctx.fillText(txt, bar.x, bar.y - 2); }
+      });
+      ctx.restore();
+    }
+  };
+
   // ── Render rutenett med én mini-graf per avdeling ──
   const grid = document.getElementById('respons-kart-grid');
   ryddResponsKarter();
@@ -3318,12 +3360,12 @@ async function renderResponsKart() {
 
   serier.forEach(({ avd, farge, visData }) => {
     const kort = document.createElement('div');
-    kort.style.cssText = 'background:var(--surface2,#f8f9fb); border:1px solid var(--border); border-radius:10px; padding:12px 12px 8px;';
+    kort.style.cssText = 'background:var(--surface2,#f8f9fb); border:1px solid var(--border); border-radius:10px; padding:14px 14px 10px;';
     const tittel = document.createElement('div');
-    tittel.style.cssText = `display:flex; align-items:center; gap:7px; font-size:0.82rem; font-weight:700; color:var(--text); margin-bottom:6px;`;
-    tittel.innerHTML = `<span style="width:10px;height:10px;border-radius:2px;background:${farge};flex:none"></span>${avd}`;
+    tittel.style.cssText = `display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:700; color:var(--text); margin-bottom:8px;`;
+    tittel.innerHTML = `<span style="width:11px;height:11px;border-radius:3px;background:${farge};flex:none"></span>${avd}`;
     const canvasWrap = document.createElement('div');
-    canvasWrap.style.cssText = 'height:150px; position:relative;';
+    canvasWrap.style.cssText = 'height:200px; position:relative;';
     const canvas = document.createElement('canvas');
     canvasWrap.appendChild(canvas);
     kort.appendChild(tittel);
@@ -3332,6 +3374,7 @@ async function renderResponsKart() {
 
     const kart = new Chart(canvas.getContext('2d'), {
       type: 'bar',
+      plugins: [verdiPlugin],
       data: {
         labels,
         datasets: [{
@@ -3347,6 +3390,7 @@ async function renderResponsKart() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: { padding: { top: 16 } },
         onHover: (event, elements) => {
           event.native.target.style.cursor =
             (!erDerivert && elements.length) ? 'pointer' : 'default';
