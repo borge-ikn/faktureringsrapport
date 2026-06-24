@@ -180,6 +180,9 @@
       padding: 0.75rem 1.5rem;
       border-bottom: 1px solid rgba(255,255,255,0.1);
       box-shadow: 0 2px 8px rgba(28,52,97,.18);
+      position: sticky;
+      top: 0;
+      z-index: 60;
     }
 
     /* ── Sidebar layout ── */
@@ -192,10 +195,15 @@
       width: 220px;
       background: #001d45;
       flex-shrink: 0;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       transition: width 0.22s cubic-bezier(.4,0,.2,1);
       display: flex;
       flex-direction: column;
+      position: sticky;
+      top: 54px;
+      align-self: flex-start;
+      height: calc(100vh - 54px);
     }
     .sidebar.kollapset { width: 52px; }
     .sidebar-toggle-btn {
