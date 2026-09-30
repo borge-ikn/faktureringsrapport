@@ -765,16 +765,17 @@
     .modal-status { font-size: 0.82rem; margin-top: 0.4rem; min-height: 1.2em; }
 
     /* ── Meld feil eller forbedring ── */
+    /* Samme knapp som i ordreapp-v2 (MeldInnKnapp.jsx): 44 px rund, lucide
+       message-square-warning, litt gjennomsiktig til den berøres. */
     .meld-knapp {
-      position: fixed; right: 18px; bottom: 18px; z-index: 90;
-      display: flex; align-items: center; gap: 0.45rem;
+      position: fixed; right: 14px; bottom: 20px; z-index: 90;
+      width: 44px; height: 44px; padding: 0; border: none; border-radius: 22px;
+      display: flex; align-items: center; justify-content: center;
       background: #002554; color: #f1b434;
-      border: none; border-radius: 999px;
-      padding: 0.6rem 1rem; font-weight: 600; font-size: 0.85rem; font-family: inherit;
-      box-shadow: 0 4px 14px rgba(0,0,0,.3); cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,.22); cursor: pointer;
+      opacity: .85; transition: opacity 120ms;
     }
-    .meld-knapp:hover { opacity: .92; }
-    @media (max-width: 640px) { .meld-knapp span { display: none; } .meld-knapp { padding: 0.75rem; } }
+    .meld-knapp:hover { opacity: 1; }
     #meld-modal { z-index: 200; }
     #meld-modal .modal-boks { width: 520px; max-height: 92vh; overflow-y: auto; }
     .meld-ring {
@@ -1728,9 +1729,8 @@
     </div>
   </div>
   <!-- Meld feil eller forbedring (ticket i ikn-tickets, via netlify/functions/meld-inn.mjs) -->
-  <button class="meld-knapp" id="meld-knapp" type="button" title="Meld feil eller forbedring">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <span>Meld feil eller forbedring</span>
+  <button class="meld-knapp" id="meld-knapp" type="button" title="Meld feil eller forbedring" aria-label="Meld feil eller forbedring">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="M12 15h.01"/><path d="M12 7v4"/></svg>
   </button>
   <div class="modal-overlay" id="meld-modal" style="display:none">
     <div class="modal-boks">
