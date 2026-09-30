@@ -764,6 +764,59 @@
     .modal-lagre:hover { opacity: 0.9; }
     .modal-status { font-size: 0.82rem; margin-top: 0.4rem; min-height: 1.2em; }
 
+    /* ── Meld feil eller forbedring ── */
+    .meld-knapp {
+      position: fixed; right: 18px; bottom: 18px; z-index: 90;
+      display: flex; align-items: center; gap: 0.45rem;
+      background: #002554; color: #f1b434;
+      border: none; border-radius: 999px;
+      padding: 0.6rem 1rem; font-weight: 600; font-size: 0.85rem; font-family: inherit;
+      box-shadow: 0 4px 14px rgba(0,0,0,.3); cursor: pointer;
+    }
+    .meld-knapp:hover { opacity: .92; }
+    @media (max-width: 640px) { .meld-knapp span { display: none; } .meld-knapp { padding: 0.75rem; } }
+    #meld-modal { z-index: 200; }
+    #meld-modal .modal-boks { width: 520px; max-height: 92vh; overflow-y: auto; }
+    .meld-ring {
+      display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+      background: #fff8e6; border: 1px solid #f1b434; border-left: 4px solid #f1b434;
+      border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 0.75rem;
+      font-size: 0.8rem; line-height: 1.45; color: #5b4a1a;
+    }
+    .meld-ring strong { display: block; color: #002554; font-size: 0.86rem; }
+    .meld-ring > div { flex: 1 1 200px; }
+    .meld-ring a {
+      background: #002554; color: #f1b434; text-decoration: none; font-weight: 700;
+      border-radius: 8px; padding: 0.55rem 0.9rem; white-space: nowrap;
+    }
+    .meld-info {
+      font-size: 0.78rem; line-height: 1.5; color: var(--muted);
+      background: #f9fafb; border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.5rem 0.65rem; margin-bottom: 0.75rem;
+    }
+    .meld-label {
+      display: block; margin: 0.65rem 0 0.3rem;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--muted);
+    }
+    .meld-kategorier { display: flex; gap: 0.5rem; }
+    .meld-kat {
+      flex: 1; padding: 0.6rem; border-radius: 8px; cursor: pointer;
+      background: #fff; border: 1.5px solid var(--border); color: var(--muted);
+      font-weight: 600; font-size: 0.88rem; font-family: inherit;
+    }
+    .meld-kat[aria-pressed="true"] { color: var(--text); font-weight: 700; }
+    .meld-kat[data-kat="bug"][aria-pressed="true"] { border-color: #dc2626; background: #dc262614; }
+    .meld-kat[data-kat="improvement"][aria-pressed="true"] { border-color: #f1b434; background: #f1b43414; }
+    .meld-felt {
+      width: 100%; padding: 0.55rem 0.7rem; font-size: 1rem; font-family: inherit; /* 16px: hindrer iOS-zoom */
+      border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text);
+    }
+    .meld-felt:focus { outline: 2px solid var(--accent); }
+    textarea.meld-felt { min-height: 90px; resize: vertical; }
+    .meld-send { background: #f1b434; color: #002554; }
+    .meld-send:disabled { opacity: .45; cursor: default; }
+    .meld-status a { color: var(--accent); font-weight: 600; }
+
     /* ── Restordre grad-side ── */
     .restordre-side-topplinje {
       display: flex;
@@ -1674,6 +1727,45 @@
       </div>
     </div>
   </div>
+  <!-- Meld feil eller forbedring (ticket i ikn-tickets, via netlify/functions/meld-inn.mjs) -->
+  <button class="meld-knapp" id="meld-knapp" type="button" title="Meld feil eller forbedring">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>Meld feil eller forbedring</span>
+  </button>
+  <div class="modal-overlay" id="meld-modal" style="display:none">
+    <div class="modal-boks">
+      <div class="modal-tittel">Meld en feil eller et ønske</div>
+      <div class="meld-ring">
+        <div>
+          <strong>Står du fast akkurat nå?</strong>
+          Er det noe kritisk som gjør at du ikke kommer videre, ring Børge med en gang. Det du skriver her havner i en kø og blir ikke lest med en gang.
+        </div>
+        <a href="tel:+4746123491">461 23 491</a>
+      </div>
+      <p class="meld-info">
+        Dette skjemaet gjelder <strong>faktureringsrapporten</strong> — noe som ikke virker, eller noe du ønsker deg.
+        Appen tar ingen skjermbilder. Det som følger med automatisk er hvilken visning, måned og avdeling du sto på,
+        hvilken telefon eller PC du bruker og skjermbredden. Vil du ha et bilde med, legger du det ved selv.
+      </p>
+      <span class="meld-label">Hva gjelder det?</span>
+      <div class="meld-kategorier">
+        <button type="button" class="meld-kat" data-kat="bug" aria-pressed="false">Noe er feil</button>
+        <button type="button" class="meld-kat" data-kat="improvement" aria-pressed="false">Forbedring</button>
+      </div>
+      <label class="meld-label" for="meld-tittel">Kort oppsummert *</label>
+      <input class="meld-felt" id="meld-tittel" maxlength="120" placeholder="F.eks. «Restordre viser feil sum for Oslo»">
+      <label class="meld-label" for="meld-beskrivelse">Hva skjedde?</label>
+      <textarea class="meld-felt" id="meld-beskrivelse" placeholder="Hva gjorde du, og hva skjedde i stedet? Skriv gjerne hvilken ordre eller avdeling det gjaldt."></textarea>
+      <label class="meld-label" for="meld-fil">Legg ved bilde (valgfritt)</label>
+      <input type="file" id="meld-fil" accept="image/*">
+      <div class="modal-status meld-status" id="meld-status"></div>
+      <div class="modal-knapper">
+        <button class="modal-avbryt" id="meld-avbryt" type="button">Avbryt</button>
+        <button class="modal-lagre meld-send" id="meld-send" type="button" disabled>Send inn</button>
+      </div>
+    </div>
+  </div>
+
   <div id="budsjett-side">
     <div class="budsjett-topplinje">
       <button class="tilbake-knapp" id="tilbake-knapp">← Tilbake til rapport</button>
@@ -3589,7 +3681,130 @@ document.getElementById('sidebar-toggle-btn').addEventListener('click', () => {
   localStorage.setItem('sidebar-kollapset', kollapset);
 });
 
-setInterval(() => location.reload(), 60 * 60 * 1000);
+// ── Meld feil eller forbedring ────────────────────────────────────────────
+// Sender til netlify/functions/meld-inn.mjs, som lager en ticket i ikn-tickets
+// (repo borge-ikn/faktureringsrapport). Brukeren kan ikke skrive til tickets
+// selv, så JWT-et sendes i header og funksjonen setter inn med service-nøkkel.
+const meldModal = document.getElementById('meld-modal');
+const meldState = { kategori: null, sender: false };
+
+function meldModalAapen() { return meldModal.style.display !== 'none'; }
+
+function meldOppdaterKnapp() {
+  document.getElementById('meld-send').disabled =
+    !meldState.kategori || !document.getElementById('meld-tittel').value.trim() || meldState.sender;
+}
+
+function meldLukk() {
+  if (meldState.sender) return;
+  meldModal.style.display = 'none';
+  meldState.kategori = null;
+  document.querySelectorAll('.meld-kat').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  ['meld-tittel', 'meld-beskrivelse', 'meld-fil'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('meld-status').textContent = '';
+  meldOppdaterKnapp();
+}
+
+// Bilder krympes til maks 1600 px JPEG før base64 — mobilbilder på flere MB
+// ville ellers sprengt Netlifys 6 MB-grense for funksjonskall.
+function meldBildeTilBase64(fil) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(fil);
+    const bilde = new Image();
+    bilde.onload = () => {
+      const skala = Math.min(1, 1600 / Math.max(bilde.width, bilde.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(bilde.width * skala);
+      c.height = Math.round(bilde.height * skala);
+      c.getContext('2d').drawImage(bilde, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', 0.8).split(',')[1]);
+    };
+    bilde.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Kunne ikke lese bildet')); };
+    bilde.src = url;
+  });
+}
+
+async function meldSend() {
+  const status = document.getElementById('meld-status');
+  meldState.sender = true;
+  meldOppdaterKnapp();
+  status.style.color = '';
+  status.textContent = 'Sender…';
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) throw new Error('Du er logget ut — last siden på nytt og logg inn.');
+
+    const kropp = {
+      kategori: meldState.kategori,
+      tittel: document.getElementById('meld-tittel').value.trim(),
+      beskrivelse: document.getElementById('meld-beskrivelse').value.trim(),
+      metadata: {
+        visning: document.querySelector('.sidebar-item.nav-aktiv')?.title || 'Rapport',
+        maaned: valgtMaaned,
+        avdeling: document.getElementById('avd-velger').value || 'Alle avdelinger',
+        enhet: navigator.userAgent,
+        skjerm: `${window.innerWidth}x${window.innerHeight}`
+      }
+    };
+    const fil = document.getElementById('meld-fil').files[0];
+    if (fil) {
+      kropp.vedlegg_base64  = await meldBildeTilBase64(fil);
+      kropp.vedlegg_filnavn = fil.name.replace(/\.[^.]+$/, '') + '.jpg';
+      kropp.vedlegg_mime    = 'image/jpeg';
+    }
+
+    const res = await fetch('/.netlify/functions/meld-inn', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+      body: JSON.stringify(kropp)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Serveren svarte ${res.status}`);
+
+    // Vedlegget kan ha feilet uten at ticketen gjorde det — brukeren skal få vite det.
+    const tekst = data.vedlegg_feilet
+      ? `Meldt inn som #${data.ticket_number} — men bildet ble ikke med. `
+      : `Meldt inn som #${data.ticket_number} — takk! `;
+    status.textContent = tekst;
+    const lenke = document.createElement('a');
+    lenke.href = `https://ikn-tickets.netlify.app/ticket/${data.id}`;
+    lenke.target = '_blank';
+    lenke.rel = 'noopener';
+    lenke.textContent = 'Se saken';
+    status.appendChild(lenke);
+    status.style.color = data.vedlegg_feilet ? 'var(--yellow)' : 'var(--green)';
+    // Tøm feltene, men la bekreftelsen stå til brukeren lukker selv.
+    meldState.kategori = null;
+    document.querySelectorAll('.meld-kat').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    ['meld-tittel', 'meld-beskrivelse', 'meld-fil'].forEach(id => { document.getElementById(id).value = ''; });
+  } catch (e) {
+    // Skrevet tekst beholdes ved feil, så brukeren slipper å skrive på nytt.
+    status.style.color = 'var(--red)';
+    status.textContent = e.message || 'Kunne ikke sende innmeldingen';
+  } finally {
+    meldState.sender = false;
+    meldOppdaterKnapp();
+  }
+}
+
+document.getElementById('meld-knapp').addEventListener('click', () => {
+  document.getElementById('meld-status').textContent = '';
+  meldModal.style.display = 'flex';
+});
+document.getElementById('meld-avbryt').addEventListener('click', meldLukk);
+document.getElementById('meld-send').addEventListener('click', meldSend);
+document.getElementById('meld-tittel').addEventListener('input', meldOppdaterKnapp);
+document.querySelectorAll('.meld-kat').forEach(b => b.addEventListener('click', () => {
+  meldState.kategori = b.dataset.kat;
+  document.querySelectorAll('.meld-kat').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  meldOppdaterKnapp();
+}));
+meldModal.addEventListener('click', e => { if (e.target === meldModal) meldLukk(); });
+
+// Timelig reload holder dataene ferske, men skal aldri spise en innmelding
+// brukeren holder på å skrive.
+setInterval(() => { if (!meldModalAapen()) location.reload(); }, 60 * 60 * 1000);
 </script>
 </body>
 </html>
